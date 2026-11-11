@@ -1,7 +1,10 @@
 #include "Investigator.hpp"
 #include "Operations.hpp"
+#include <algorithm>
+#include <cctype>
 #include <httplib.h>
 #include <iostream>
+#include <openssl/crypto.h>
 namespace {
 int integer(const httplib::Request &req, const std::string &key, int def, int max) {
   if (!req.has_param(key))
@@ -24,12 +27,66 @@ void send(httplib::Response &res, const json &j, int status = 200) {
   res.status = status;
   res.set_content(j.dump(), "application/json; charset=utf-8");
 }
+bool is_mcp_path(const std::string &path) {
+  return path == "/mcp" || (path.rfind("/mcp/", 0) == 0 && path.find('/', 5) == std::string::npos);
+}
+bool constant_time_equals(const std::string &a, const std::string &b) {
+  return !a.empty() && a.size() == b.size() && CRYPTO_memcmp(a.data(), b.data(), a.size()) == 0;
+}
+std::string media_type(std::string value) {
+  auto semi = value.find(';');
+  if (semi != std::string::npos)
+    value.resize(semi);
+  auto not_space = [](unsigned char c) { return !std::isspace(c); };
+  value.erase(value.begin(), std::find_if(value.begin(), value.end(), not_space));
+  value.erase(std::find_if(value.rbegin(), value.rend(), not_space).base(), value.end());
+  for (auto &c : value)
+    c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+  return value;
+}
+bool check_mcp_auth(const httplib::Request &req, httplib::Response &res,
+                    const ServerOptions &options, const std::string &origin) {
+  if (options.mcp_token.empty())
+    return true;
+  std::string path_token;
+  if (req.path.size() > 5 && req.path.rfind("/mcp/", 0) == 0) {
+    path_token = req.path.substr(5);
+    if (path_token.find('/') != std::string::npos)
+      path_token.clear();
+  }
+  std::string auth = req.get_header_value("Authorization");
+  std::string bearer;
+  if (auth.size() > 7) {
+    std::string scheme = auth.substr(0, 7);
+    for (auto &c : scheme)
+      c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+    if (scheme == "bearer ")
+      bearer = auth.substr(7);
+  }
+  bool bearer_ok = constant_time_equals(bearer, options.mcp_token);
+  bool path_ok = constant_time_equals(path_token, options.mcp_token);
+  if (!bearer_ok && !path_ok) {
+    res.set_header("WWW-Authenticate", "Bearer");
+    send(res, {{"code", "AUTHORITY_REQUIRED"}, {"message", "Token MCP inválido ou ausente"}}, 401);
+    return false;
+  }
+  auto request_origin = req.get_header_value("Origin");
+  if (req.get_header_value("Sec-Fetch-Site") == "cross-site" ||
+      (!request_origin.empty() && request_origin != origin && !path_ok)) {
+    send(res,
+         {{"code", "AUTHORITY_REQUIRED"}, {"message", "Origem não local recusada no endpoint MCP"}},
+         403);
+    return false;
+  }
+  return true;
+}
 } // namespace
-void serve(Service &svc, int port) {
+void serve(Service &svc, const ServerOptions &options) {
   httplib::Server server;
   Investigator investigator(svc);
+  McpHttpDispatcher mcp_dispatcher(svc, options.mcp_allow_writes);
   const std::string token = uuid() + uuid();
-  const std::string host = "127.0.0.1:" + std::to_string(port), origin = "http://" + host;
+  const std::string host = "127.0.0.1:" + std::to_string(options.port), origin = "http://" + host;
   server.new_task_queue = [] { return new httplib::ThreadPool(4); };
   server.set_payload_max_length(17 * 1024 * 1024);
   server.set_read_timeout(15);
@@ -44,6 +101,9 @@ void serve(Service &svc, int port) {
         "Content-Security-Policy",
         "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob:; "
         "connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
+    bool mcp_route = is_mcp_path(req.path);
+    if (mcp_route && !options.mcp_token.empty())
+      return httplib::Server::HandlerResponse::Unhandled;
     if (req.get_header_value("Host") != host) {
       send(res, {{"code", "INVALID_INPUT"}, {"message", "Host local inválido; use " + origin}},
            403);
@@ -55,7 +115,7 @@ void serve(Service &svc, int port) {
       send(res, {{"code", "AUTHORITY_REQUIRED"}, {"message", "Origem externa recusada"}}, 403);
       return httplib::Server::HandlerResponse::Handled;
     }
-    if (req.method != "GET" && req.method != "HEAD" &&
+    if (!mcp_route && req.method != "GET" && req.method != "HEAD" &&
         req.get_header_value("X-NOESE-Token") != token) {
       send(res, {{"code", "AUTHORITY_REQUIRED"}, {"message", "Sessão local necessária"}}, 403);
       return httplib::Server::HandlerResponse::Handled;
@@ -109,8 +169,51 @@ void serve(Service &svc, int port) {
   });
   server.Get("/api/v1/tools", [&](const auto &, auto &res) {
     send(res, {{"tools", operation_catalog(true)},
-               {"transport", "MCP stdio"},
-               {"default_mode", "read_only"}});
+               {"transport", "MCP stdio + Streamable HTTP"},
+               {"default_mode", "read_only"},
+               {"http_endpoint", "/mcp"},
+               {"http_writes", options.mcp_allow_writes},
+               {"http_auth", !options.mcp_token.empty()}});
+  });
+  const std::string mcp_pattern = R"(/mcp(?:/[^/]+)?)";
+  server.Options(mcp_pattern, [&](const auto &, auto &res) {
+    res.set_header("Allow", "POST, OPTIONS");
+    res.status = 204;
+    res.set_content("", "text/plain; charset=utf-8");
+  });
+  server.Get(mcp_pattern, [&](const auto &, auto &res) {
+    res.set_header("Allow", "POST, OPTIONS");
+    send(res,
+         {{"code", "METHOD_NOT_ALLOWED"},
+          {"message", "Use POST /mcp para JSON-RPC MCP Streamable HTTP"}},
+         405);
+  });
+  server.Delete(mcp_pattern, [&](const auto &req, auto &res) {
+    if (!check_mcp_auth(req, res, options, origin))
+      return;
+    res.status = 204;
+    res.set_content("", "text/plain; charset=utf-8");
+  });
+  server.Post(mcp_pattern, [&](const auto &req, auto &res) {
+    if (!check_mcp_auth(req, res, options, origin))
+      return;
+    if (media_type(req.get_header_value("Content-Type")) != "application/json") {
+      send(res, {{"code", "INVALID_INPUT"}, {"message", "Envie application/json"}}, 400);
+      return;
+    }
+    if (req.body.size() > 1024 * 1024) {
+      send(res, {{"code", "INVALID_INPUT"}, {"message", "Corpo excede limite de 1 MiB"}}, 400);
+      return;
+    }
+    auto result = mcp_dispatcher.dispatch(req.body, req.get_header_value("Mcp-Session-Id"));
+    if (!result.session_id.empty())
+      res.set_header("Mcp-Session-Id", result.session_id);
+    if (result.response.is_null()) {
+      res.status = 202;
+      res.set_content("", "text/plain; charset=utf-8");
+    } else {
+      send(res, result.response, 200);
+    }
   });
   server.Get("/api/v1/session", [&](const auto &, auto &res) {
     send(res, {{"token", token}, {"authority", "local single user"}});
@@ -232,10 +335,12 @@ void serve(Service &svc, int port) {
       throw Error(400, "INVALID_INPUT", "Versão atual obrigatória");
     send(res, svc.record(req.matches[1], in, integer(req, "window", 2, 2)));
   });
-  if (!server.bind_to_port("127.0.0.1", port))
+  if (!server.bind_to_port("127.0.0.1", options.port))
     throw std::runtime_error("Cannot bind loopback port");
   investigator.start();
-  std::cout << "NOESE http://127.0.0.1:" << port << "  data=" << svc.store.root << std::endl;
+  std::cout << "NOESE http://127.0.0.1:" << options.port << "  data=" << svc.store.root
+            << "  mcp_http=" << (options.mcp_allow_writes ? "read_write" : "read_only")
+            << (options.mcp_token.empty() ? ",local" : ",token") << std::endl;
   if (!server.listen_after_bind())
     throw std::runtime_error("Cannot bind loopback port");
 }

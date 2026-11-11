@@ -1,13 +1,29 @@
 #include "Investigator.hpp"
 #include "Operations.hpp"
+#include <algorithm>
+#include <cctype>
+#include <cstdlib>
 #include <iostream>
 #include <sys/stat.h>
+namespace {
+bool env_truthy(const char *name) {
+  const char *raw = std::getenv(name);
+  if (!raw)
+    return false;
+  std::string v(raw);
+  for (auto &c : v)
+    c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+  return v == "1" || v == "true" || v == "yes";
+}
+} // namespace
 int main(int argc, char **argv) {
   umask(0077);
   try {
     fs::path data = "var";
     int port = 8787;
     bool mcp = false, investigate = false, allow_writes = false, port_set = false;
+    bool mcp_allow_writes = false, mcp_token_set = false;
+    std::string mcp_token;
     int window = 2;
     if (argc == 4 && std::string(argv[1]) == "restore") {
       Store::restore(argv[2], argv[3]);
@@ -27,7 +43,12 @@ int main(int argc, char **argv) {
         mcp = true;
       else if (a == "--allow-writes")
         allow_writes = true;
-      else if (a == "--data" && i + 1 < argc)
+      else if (a == "--mcp-allow-writes")
+        mcp_allow_writes = true;
+      else if (a == "--mcp-token" && i + 1 < argc) {
+        mcp_token_set = true;
+        mcp_token = argv[++i];
+      } else if (a == "--data" && i + 1 < argc)
         data = argv[++i];
       else if (a == "--port" && i + 1 < argc) {
         port_set = true;
@@ -39,8 +60,10 @@ int main(int argc, char **argv) {
           throw std::runtime_error("Port must be 1024..65535");
       } else if (a == "--help") {
         std::cout
-            << "noese [--data var] [--port 8787]\nnoese restore BACKUP NEW_DIRECTORY\nnoese "
-               "mcp [--data var] [--allow-writes]\nnoese investigate --data var [--window 2]\n";
+            << "noese [--data var] [--port 8787] [--mcp-allow-writes] [--mcp-token TOKEN]\n"
+               "noese restore BACKUP NEW_DIRECTORY\n"
+               "noese mcp [--data var] [--allow-writes]\n"
+               "noese investigate --data var [--window 2]\n";
         return 0;
       } else
         throw std::runtime_error("Unknown argument: " + a);
@@ -51,6 +74,8 @@ int main(int argc, char **argv) {
       throw std::runtime_error("investigate does not start HTTP");
     if (allow_writes && !mcp)
       throw std::runtime_error("--allow-writes requires mcp mode");
+    if ((mcp_allow_writes || mcp_token_set) && (mcp || investigate))
+      throw std::runtime_error("--mcp-allow-writes/--mcp-token are HTTP server options");
     if (mcp && port_set)
       throw std::runtime_error("mcp uses stdio, not --port");
     Service service(data);
@@ -59,8 +84,16 @@ int main(int argc, char **argv) {
       std::cout << investigator.once(window).dump() << '\n';
     } else if (mcp)
       serve_mcp(service, allow_writes);
-    else
-      serve(service, port);
+    else {
+      ServerOptions options;
+      options.port = port;
+      options.mcp_allow_writes = mcp_allow_writes || env_truthy("NOESE_MCP_ALLOW_WRITES");
+      if (mcp_token_set)
+        options.mcp_token = mcp_token;
+      else if (const char *env_token = std::getenv("NOESE_MCP_TOKEN"))
+        options.mcp_token = env_token;
+      serve(service, options);
+    }
     return 0;
   } catch (const std::exception &e) {
     std::cerr << "NOESE: " << e.what() << '\n';

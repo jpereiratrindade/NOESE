@@ -6,6 +6,7 @@ StartLimitBurst=5
 [Service]
 Type=exec
 WorkingDirectory=@ROOT@
+EnvironmentFile=-@ENV_FILE@
 ExecStart=@EXECUTABLE@ --data @DATA@ --port @PORT@
 Restart=on-failure
 RestartSec=3

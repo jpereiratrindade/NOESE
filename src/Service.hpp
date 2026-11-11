@@ -14,4 +14,9 @@ struct Service {
   json import_lab(int window);
   json purge(const std::string &id, const std::string &confirm);
 };
-void serve(Service &service, int port);
+struct ServerOptions {
+  int port = 8787;
+  bool mcp_allow_writes = false;
+  std::string mcp_token;
+};
+void serve(Service &service, const ServerOptions &options);

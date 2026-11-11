@@ -23,7 +23,13 @@ Use o mesmo `--data` do processo HTTP para compartilhar o acervo. Ambos os proce
 
 ## Contratos e ferramentas
 
-Implementa o subconjunto de ferramentas da revisão **2025-11-25**: `initialize`, `notifications/initialized`, `ping`, `tools/list` e `tools/call`. A negociação devolve 2025-11-25, inclusive se a versão pedida não for suportada; cabe ao cliente encerrar se não a aceitar. Não implementa Streamable HTTP, SSE, resources, prompts, subscriptions ou tasks. Referências oficiais: [ciclo de vida](https://modelcontextprotocol.io/specification/2025-11-25/basic/lifecycle), [stdio](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports), [ferramentas](https://modelcontextprotocol.io/specification/2025-11-25/server/tools).
+Implementa o subconjunto de ferramentas da revisão **2025-11-25** do MCP via **stdio** e **Streamable HTTP** (`/mcp`, negociando também `2025-06-18` e `2025-03-26`): `initialize`, `notifications/initialized`, `ping`, `tools/list` e `tools/call`. No modo stdio a versão negociada é sempre `2025-11-25`. Não implementa SSE, resources, prompts, subscriptions ou tasks.
+
+No servidor HTTP (`--data ... --port 8787`), o endpoint `/mcp` fica em somente leitura por padrão e restrito a `127.0.0.1`. Para clientes externos via túnel e escrita com propostas:
+
+- `--mcp-allow-writes` ou `NOESE_MCP_ALLOW_WRITES=1` habilita as ferramentas de escrita no endpoint `/mcp`.
+- `--mcp-token <TOKEN>` ou `NOESE_MCP_TOKEN=<TOKEN>` exige autenticação por `Authorization: Bearer <TOKEN>` ou `/mcp/<TOKEN>` (comparação em tempo constante), permitindo encaminhamento por túnel HTTPS sem liberar as rotas da interface web (`/`, `/mesa`, `/api/v1/*`) para outros `Host`.
+- O serviço systemd lê opcionalmente `<data>/mcp.env` via `EnvironmentFile`.
 
 `tools/list` publica os schemas, argumentos obrigatórios, limites e indicações de leitura/escrita. O catálogo também pode ser inspecionado em `GET /api/v1/tools`; essa rota não executa ferramentas. Todas aceitam `window=0|1|2`, padrão 2. Listagens aceitam `limit=1..500`, `offset` e retornam `next_offset`; registros investigativos podem ser filtrados por `inquiry_id`.
 

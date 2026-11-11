@@ -347,12 +347,24 @@ json operation_catalog(bool writes) {
                           {"openWorldHint", false}}}});
   return result;
 }
-json execute_operation(Service &svc, const std::string &name, const json &args,
+json execute_operation(Service &svc, const std::string &name, const json &raw_args,
                        const ClientContext &client) {
   auto all = operations();
   auto it = std::find_if(all.begin(), all.end(), [&](const auto &o) { return o.name == name; });
   if (it == all.end())
     throw Error(400, "INVALID_INPUT", "Ferramenta desconhecida");
+  json args = raw_args.is_null() ? json::object() : raw_args;
+  if (args.is_object()) {
+    std::set<std::string> req;
+    for (const auto &k : it->schema["required"])
+      req.insert(k.get<std::string>());
+    for (auto it_arg = args.begin(); it_arg != args.end();) {
+      if (it_arg.value().is_null() && !req.contains(it_arg.key()))
+        it_arg = args.erase(it_arg);
+      else
+        ++it_arg;
+    }
+  }
   validate(args, it->schema);
   if (it->writes && !client.allow_writes)
     throw Error(403, "AUTHORITY_REQUIRED", "Escrita MCP desabilitada; inicie com --allow-writes");

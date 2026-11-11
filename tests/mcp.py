@@ -90,12 +90,15 @@ class MCP(unittest.TestCase):
             self.http.wait(timeout=5)
         self.tmp.cleanup()
 
-    def start_http(self):
+    def start_http(self, extra_args=None, env=None):
         with socket.socket() as sock:
             sock.bind(('127.0.0.1',0))
             port=sock.getsockname()[1]
         self.url=f'http://127.0.0.1:{port}'
-        self.http=subprocess.Popen([BINARY,'--data',str(self.data),'--port',str(port)],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+        cmd=[BINARY,'--data',str(self.data),'--port',str(port)]
+        if extra_args:
+            cmd.extend(extra_args)
+        self.http=subprocess.Popen(cmd,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,env=env)
         for _ in range(150):
             try:
                 with urllib.request.urlopen(self.url+'/api/v1/session',timeout=.2) as r:
@@ -287,6 +290,20 @@ class MCP(unittest.TestCase):
             c.process.stdin.write(b'\n');c.process.stdin.flush()
             self.assertEqual(c.receive()['error']['code'],-32700)
 
+    def mcp_http(self,payload=None,path='/mcp',method='POST',headers=None):
+        body=json.dumps(payload).encode() if payload is not None else None
+        req_headers={'Content-Type':'application/json'}
+        if headers:
+            req_headers.update(headers)
+        request=urllib.request.Request(self.url+path,body,req_headers,method=method)
+        try:
+            response=urllib.request.urlopen(request,timeout=8)
+        except urllib.error.HTTPError as e:
+            response=e
+        with response:
+            raw=response.read()
+            return response.status,dict(response.headers),json.loads(raw) if raw else None
+
     def test_bounded_input_and_stdio_only(self):
         result=subprocess.run([BINARY,'mcp','--data',str(self.data)],input=b'x'*(1024*1024+1)+b'\n',capture_output=True,timeout=8)
         self.assertNotEqual(result.returncode,0)
@@ -295,6 +312,62 @@ class MCP(unittest.TestCase):
         invalid=subprocess.run([BINARY,'--allow-writes','--data',str(self.data)],capture_output=True,timeout=8)
         self.assertNotEqual(invalid.returncode,0)
         self.assertEqual(invalid.stdout,b'')
+
+    def test_streamable_http_mcp_auth_and_shared_writes(self):
+        secret='test-mcp-secret-token'
+        self.start_http(['--mcp-allow-writes','--mcp-token',secret])
+        status,_,err=self.mcp_http({'jsonrpc':'2.0','id':1,'method':'tools/list'})
+        self.assertEqual(status,401)
+        self.assertEqual(err['code'],'AUTHORITY_REQUIRED')
+        status,_,err=self.mcp_http({'jsonrpc':'2.0','id':1,'method':'tools/list'},headers={'Authorization':'Bearer wrong'})
+        self.assertEqual(status,401)
+        # External Host is still blocked on web/API routes even when MCP token is set.
+        status,_,_=self.mcp_http(None,path='/api/v1/session',method='GET',headers={'Host':'tunnel.example.com'})
+        self.assertEqual(status,403)
+        status,hdrs,_=self.mcp_http(None,path='/mcp',method='OPTIONS')
+        self.assertEqual(status,204)
+        self.assertIn('POST',hdrs.get('Allow',''))
+        status,hdrs,_=self.mcp_http(None,path='/mcp',method='GET')
+        self.assertEqual(status,405)
+        # Tunnel Host works on /mcp with Bearer token.
+        auth={'Authorization':'Bearer '+secret,'Host':'tunnel.example.com'}
+        status,hdrs,init=self.mcp_http({'jsonrpc':'2.0','id':1,'method':'initialize','params':{'protocolVersion':'2025-06-18','capabilities':{},'clientInfo':{'name':'chatgpt-tunnel','version':'1.0'}}},headers=auth)
+        self.assertEqual(status,200)
+        self.assertEqual(init['result']['protocolVersion'],'2025-06-18')
+        sid=hdrs.get('Mcp-Session-Id')
+        self.assertTrue(sid)
+        status,_,empty=self.mcp_http({'jsonrpc':'2.0','method':'notifications/initialized'},headers={**auth,'Mcp-Session-Id':sid})
+        self.assertEqual(status,202)
+        self.assertIsNone(empty)
+        status,_,listed=self.mcp_http({'jsonrpc':'2.0','id':2,'method':'tools/list'},headers={**auth,'Mcp-Session-Id':sid})
+        self.assertEqual(status,200)
+        names={t['name'] for t in listed['result']['tools']}
+        self.assertIn('propose_note',names)
+        # Write via HTTP /mcp and verify via web API and path-token endpoint.
+        status,_,created=self.mcp_http({'jsonrpc':'2.0','id':3,'method':'tools/call','params':{'name':'create_inquiry','arguments':{'title':'HTTP MCP','request_id':rid()}}},headers={**auth,'Mcp-Session-Id':sid})
+        self.assertEqual(status,200)
+        inq=json.loads(created['result']['content'][0]['text'])
+        self.assertEqual(inq['created_by'],'mcp:chatgpt-tunnel')
+        status,_,listed_path=self.mcp_http({'jsonrpc':'2.0','id':4,'method':'tools/call','params':{'name':'inquiries','arguments':{'limit':None,'offset':None,'window':None}}},path='/mcp/'+secret,headers={'Host':'tunnel.example.com'})
+        self.assertEqual(status,200)
+        items=json.loads(listed_path['result']['content'][0]['text'])['items']
+        self.assertEqual(len(items),1)
+        self.assertEqual(items[0]['id'],inq['id'])
+        status,_,listed_null=self.mcp_http({'jsonrpc':'2.0','id':5,'method':'tools/call','params':{'name':'inquiries','arguments':None}},path='/mcp/'+secret,headers={'Host':'tunnel.example.com'})
+        self.assertEqual(status,200)
+        self.assertEqual(len(json.loads(listed_null['result']['content'][0]['text'])['items']),1)
+        status,_,_=self.mcp_http(None,path='/mcp',method='DELETE',headers=auth)
+        self.assertEqual(status,204)
+
+    def test_streamable_http_mcp_readonly_by_default(self):
+        self.start_http()
+        status,_,listed=self.mcp_http({'jsonrpc':'2.0','id':1,'method':'tools/list'})
+        self.assertEqual(status,200)
+        names={t['name'] for t in listed['result']['tools']}
+        self.assertNotIn('propose_note',names)
+        status,_,res=self.mcp_http({'jsonrpc':'2.0','id':2,'method':'tools/call','params':{'name':'create_inquiry','arguments':{'title':'Blocked','request_id':rid()}}})
+        self.assertEqual(status,200)
+        self.assertTrue(res['result']['isError'])
 
 if __name__=='__main__':
     unittest.main(verbosity=2)

@@ -35,6 +35,7 @@ for key, value in {
     '@ROOT@': str(root).replace('%', '%%'),
     '@EXECUTABLE@': quote(executable, command=True),
     '@DATA@': quote(data, command=True),
+    '@ENV_FILE@': str(data / 'mcp.env').replace('%', '%%').replace(' ', '\\x20'),
     '@PORT@': str(args.port),
 }.items():
     unit = unit.replace(key, value)

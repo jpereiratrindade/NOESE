@@ -1,8 +1,22 @@
 #pragma once
 #include "Service.hpp"
+#include <memory>
 struct ClientContext {
   bool allow_writes = false;
   std::string name = "unknown";
+};
+struct McpHttpResult {
+  json response;
+  std::string session_id;
+};
+class McpHttpDispatcher {
+  struct Impl;
+  std::unique_ptr<Impl> impl;
+
+public:
+  McpHttpDispatcher(Service &service, bool allow_writes);
+  ~McpHttpDispatcher();
+  McpHttpResult dispatch(const std::string &raw_body, const std::string &session_id);
 };
 // Both transports use Service; this catalogue defines the MCP contracts explicitly.
 json operation_catalog(bool allow_writes);
