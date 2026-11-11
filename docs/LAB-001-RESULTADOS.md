@@ -2,6 +2,8 @@
 
 Estado: **`NOT_READY` para aceitação M1**. Existe aplicação local funcional com P0/P1 implementados nas fronteiras descritas abaixo. A pertinência científica das oportunidades, a usabilidade pelo pesquisador e o ganho real sobre a investigação ainda não foram avaliados por uma pessoa. Não há certificação de descoberta autônoma.
 
+Atualização de 2026-11-11: [ensaio com modelo local concluído](EXPERIMENTO-TERCEIRO-ATOR-RESULTADO.md), com cobertura dos 21 excertos, um candidato rejeitado por apoio insuficiente e nenhuma interpretação aceita. O contraponto não foi executado. O relatório distingue esse resultado das verificações técnicas abaixo; a aceitação M1 permanece pendente.
+
 Verificação em 2026-11-10 (America/Sao_Paulo). GCC 16.2.1, `-std=c++26` explícito, SQLite 3.51.2, OpenSSL 3.5.9. CMake/Ninja; build sem downloads. Logs locais: `build/verification.log`, `build/compile_commands.json`, `build/browser-tests.log`, `build/browser/results.json`. Fontes e saídas privadas são ignoradas pelo Git.
 
 | Requisito / gate | Código ou rota | Execução / evidência | Limitação | Estado |

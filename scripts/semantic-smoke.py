@@ -15,7 +15,25 @@ root = Path(__file__).resolve().parents[1]
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--model', default='qwen2.5:3b')
 parser.add_argument('--timeout', type=int, default=1200)
+parser.add_argument('--check', action='store_true', help='Verificar condições sem iniciar servidor ou inferência')
 args = parser.parse_args()
+checks = []
+checks.append({'condition': 'executable', 'available': (root/'build/noese').is_file()})
+for name in ('NOESE-LAB-001-corpus.jsonl', 'NOESE-LAB-001-manifest.json'):
+    checks.append({'condition': name, 'available': (root/'fixtures/lab001'/name).is_file()})
+try:
+    with urllib.request.urlopen('http://127.0.0.1:11434/api/tags', timeout=3) as response:
+        models = json.load(response)['models']
+    checks.append({'condition': 'installed_model', 'available': any(m.get('name') == args.model for m in models)})
+except (OSError, ValueError, KeyError) as error:
+    checks.append({'condition': 'local_provider', 'available': False, 'reason': str(error)})
+ready = all(check['available'] for check in checks)
+if args.check or not ready:
+    print(json.dumps({'status': 'PRECONDITIONS_MET' if ready else 'BLOCKED',
+                      'checks': checks, 'inference_performed': False,
+                      'note': 'Disponibilidade não valida integridade, autorização ou mérito científico.'},
+                     ensure_ascii=False, indent=2))
+    raise SystemExit(0 if ready else 2)
 output = root / 'var/experiments' / ('semantic-' + uuid.uuid4().hex[:12])
 output.mkdir(parents=True, mode=0o700)
 with socket.socket() as sock:
@@ -56,6 +74,7 @@ try:
             previous = phase
         if status['run']:
             run = status['run']
+            verified_quotes = 0
             for finding in run['output']['findings']:
                 for evidence in finding['evidence']:
                     with urllib.request.urlopen(base+'artifacts/'+evidence['artifact_id']+'/original') as response:
@@ -63,11 +82,14 @@ try:
                     fragment = original[evidence['start']:evidence['end']]
                     assert fragment.decode() == evidence['quote']
                     assert hashlib.sha256(fragment).hexdigest() == evidence['fragment_sha256']
+                    verified_quotes += 1
             (output/'run.json').write_text(json.dumps(run, ensure_ascii=False, indent=2))
             summary = {'corpus':'LAB-001/PARTIAL_EXCERPTS','independent_evaluation':False,
                        'engine_generated':True,'model':args.model,'findings':len(run['output']['findings']),
                        'rejected':len(run['output']['rejected']), 'seconds':round(time.monotonic()-start,1),
-                       'source_quotes_verified':True,'status':run['status'], 'evidence':str(output),
+                       'source_quotes_verified':True if verified_quotes else None,
+                       'verified_quote_count':verified_quotes,
+                       'status':run['status'], 'evidence':str(output),
                        'recorded_at':datetime.datetime.now(datetime.timezone.utc).isoformat(),
                        'commit_before_run':subprocess.check_output(['git','rev-parse','HEAD'],cwd=root,text=True).strip()}
             (output/'summary.json').write_text(json.dumps(summary, ensure_ascii=False, indent=2))

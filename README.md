@@ -55,7 +55,7 @@ O contexto é limitado a 32 fontes, 4.000 bytes por fonte e 24.000 bytes no tota
 
 A configuração privada fica em `<acervo>/investigator.json`, fora do Git. O provedor aceita somente `127.0.0.1` (porta padrão 11434). A inferência usa CPU (`num_gpu: 0`), sem ferramentas, shell ou conectores externos. Pausar desabilita novos ciclos e impede publicar uma saída feita sob configuração anterior; uma chamada já enviada pode continuar no provedor. Para interromper essa chamada, reinicie o NOESE após desabilitar a análise e pare o modelo no Ollama. A pausa não descarrega o modelo automaticamente.
 
-**Limite da entrega:** os testes automatizados usam um provedor determinístico e verificam contratos técnicos. O ensaio com o modelo real no LAB-001 foi interrompido antes de se obter um resultado verificado. Não há avaliação científica independente em corpus novo, e o marco M1 permanece `NOT_READY`.
+**Limite da entrega:** os testes automatizados usam um provedor determinístico e verificam contratos técnicos. O [ensaio real de 2026-11-11](docs/EXPERIMENTO-TERCEIRO-ATOR-RESULTADO.md) examinou os 21 excertos, gerou um candidato e o rejeitou por apoio insuficiente; não houve interpretação aceita nem contraponto executado. Não há avaliação científica independente em corpus novo, e o marco M1 permanece `NOT_READY`.
 
 ## Primeiro percurso na mesa
 
@@ -80,6 +80,8 @@ python3 scripts/import_lab.py /caminho/NOESE-CAVEMAN-FULL-LAB001-v0.1.0.zip
 Na mesa (`/mesa`), escolha J0, J1 ou J2 e use **Importar LAB-001 neste recorte**. J0 contém X01–X10; J1 adiciona X11–X15; J2 adiciona X16–X21. A importação é idempotente por origem do excerto. A disponibilidade se aplica a busca, leitura, registros, revisões e exportação. Uma revisão de J2 não substitui a versão recuperada em J0. Arquivos importados manualmente pertencem ao recorte selecionado; o sistema não adivinha quando eram historicamente conhecidos.
 
 Leia o [protocolo](docs/LAB-001-PROTOCOLO.md) antes de interpretar os resultados.
+
+O [experimento de participação como terceiro ator](docs/EXPERIMENTO-TERCEIRO-ATOR.md) separa a entrada do observador da interpretação original e registra cobertura, alternativas, contribuição e trabalho humano necessário. Verifique as condições locais com `python3 scripts/semantic-smoke.py --check`; a ausência de corpus impede o ensaio e não constitui resultado investigativo negativo.
 
 ## MCP, como no CONTINUUM
 
