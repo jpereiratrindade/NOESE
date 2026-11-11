@@ -1,11 +1,15 @@
 #include "Store.hpp"
+#include <cerrno>
 #include <chrono>
+#include <fcntl.h>
 #include <fstream>
 #include <iomanip>
 #include <openssl/evp.h>
 #include <openssl/rand.h>
 #include <sstream>
+#include <sys/file.h>
 #include <sys/stat.h>
+#include <unistd.h>
 namespace {
 const std::vector<std::string> types = {"artifacts",       "occurrences",   "anchors",
                                         "statements",      "relations",     "inquiries",
@@ -87,15 +91,46 @@ void write_file(const fs::path &p, const std::string &bytes) {
   if (!f || !f.write(bytes.data(), bytes.size()))
     throw std::runtime_error("Cannot write " + p.string());
 }
+void ArchiveMutex::open(const fs::path &path) {
+  descriptor = ::open(path.c_str(), O_CREAT | O_RDWR | O_CLOEXEC, 0600);
+  if (descriptor < 0)
+    throw std::runtime_error("Cannot open archive lock");
+}
+void ArchiveMutex::lock() {
+  thread_mutex.lock();
+  if (depth == 0) {
+    int result;
+    do {
+      result = flock(descriptor, LOCK_EX);
+    } while (result < 0 && errno == EINTR);
+    if (result < 0) {
+      thread_mutex.unlock();
+      throw std::runtime_error("Cannot lock archive");
+    }
+  }
+  ++depth;
+}
+void ArchiveMutex::unlock() {
+  if (--depth == 0)
+    flock(descriptor, LOCK_UN);
+  thread_mutex.unlock();
+}
+ArchiveMutex::~ArchiveMutex() {
+  if (descriptor >= 0)
+    ::close(descriptor);
+}
 Store::Store(fs::path p) : root(fs::absolute(p)) {
   fs::create_directories(root / "objects");
   chmod(root.c_str(), 0700);
   chmod((root / "objects").c_str(), 0700);
+  mutex.open(root / ".archive.lock");
+  std::lock_guard lock(mutex);
   if (sqlite3_open((root / "noese.sqlite").c_str(), &db) != SQLITE_OK)
     throw std::runtime_error("SQLite open failed");
   sqlite3_busy_timeout(db, 5000);
   exec("PRAGMA foreign_keys=ON; PRAGMA journal_mode=WAL; PRAGMA secure_delete=ON;");
   exec(read_file(fs::path(NOESE_ROOT) / "sql/001_initial.sql"));
+  exec(read_file(fs::path(NOESE_ROOT) / "sql/002_operation_requests.sql"));
   for (auto &t : types) {
     exec("CREATE TABLE IF NOT EXISTS " + t +
          "(id TEXT NOT NULL,version INTEGER NOT NULL,payload TEXT NOT NULL "

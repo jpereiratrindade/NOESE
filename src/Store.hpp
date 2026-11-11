@@ -16,10 +16,22 @@ std::string uuid();
 std::string now();
 std::string read_file(const fs::path &path);
 void write_file(const fs::path &path, const std::string &bytes);
+// Cooperating HTTP/MCP processes serialize an entire operation, including objects.
+class ArchiveMutex {
+  std::recursive_mutex thread_mutex;
+  int descriptor = -1;
+  unsigned depth = 0;
+
+public:
+  void open(const fs::path &path);
+  void lock();
+  void unlock();
+  ~ArchiveMutex();
+};
 struct Store {
   sqlite3 *db = nullptr;
   fs::path root;
-  std::recursive_mutex mutex;
+  ArchiveMutex mutex;
   explicit Store(fs::path path);
   ~Store();
   void exec(const std::string &sql);
@@ -38,15 +50,25 @@ struct Store {
 struct Transaction {
   Store &s;
   bool committed = false;
+  std::string savepoint;
   explicit Transaction(Store &store) : s(store) {
-    s.exec("BEGIN IMMEDIATE");
+    if (sqlite3_get_autocommit(s.db))
+      s.exec("BEGIN IMMEDIATE");
+    else {
+      savepoint = "op_" + uuid();
+      s.exec("SAVEPOINT " + savepoint);
+    }
   }
   void commit() {
-    s.exec("COMMIT");
+    s.exec(savepoint.empty() ? "COMMIT" : "RELEASE SAVEPOINT " + savepoint);
     committed = true;
   }
   ~Transaction() {
-    if (!committed)
-      sqlite3_exec(s.db, "ROLLBACK", nullptr, nullptr, nullptr);
+    if (!committed) {
+      auto sql = savepoint.empty()
+                     ? "ROLLBACK"
+                     : "ROLLBACK TO SAVEPOINT " + savepoint + "; RELEASE SAVEPOINT " + savepoint;
+      sqlite3_exec(s.db, sql.c_str(), nullptr, nullptr, nullptr);
+    }
   }
 };

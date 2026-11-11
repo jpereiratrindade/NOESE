@@ -48,6 +48,20 @@ Na interface, escolha J0, J1 ou J2 e use **Importar LAB-001 neste recorte**. J0 
 
 Leia o [protocolo](docs/LAB-001-PROTOCOLO.md) antes de interpretar os resultados.
 
+## MCP, como no CONTINUUM
+
+O mesmo executável oferece MCP por stdio e compartilha o acervo com o navegador, usando as mesmas regras de fontes, versões e disponibilidade por janela.
+
+```bash
+./scripts/mcp.sh --data /caminho/NOESE/var
+# Somente para cliente confiável e escrita autorizada:
+./scripts/mcp.sh --data /caminho/NOESE/var --allow-writes
+```
+
+Leitura é o padrão. Com escrita habilitada, o cliente pode propor notas, relações e possibilidades para crítica no navegador; não autoriza nem executa contribuições. Escritas registram a origem MCP e exigem um `request_id` estável para repetição segura. Revisões diretas exigem versão e razão. O modo MCP não inicia HTTP nem faz consultas externas.
+
+[Configuração e contratos MCP](docs/MCP.md) · [Exemplo de cliente](config/mcp.example.json)
+
 ## Backup, restauração e exportação
 
 **Criar backup** usa a SQLite Online Backup API, copia os objetos e gera um manifesto com hashes sob `var/backups/<id>/`. Faça backup com espaço suficiente e preserve a pasta inteira.
@@ -65,7 +79,7 @@ O pacote de investigação é portável e inspecionável; a restauração do ace
 
 ## Verificação
 
-`verify.sh` compila e executa os 12 cenários HTTP de `tests/vertical.py` via CTest. As bases de teste usam diretórios temporários separados. O teste de LAB real é explicitamente pulado quando o corpus privado não estiver disponível. Nenhum dado de teste é inserido no acervo de uso.
+`verify.sh` compila e executa 12 cenários HTTP de `tests/vertical.py` e 11 cenários MCP de `tests/mcp.py` via CTest. As bases de teste usam diretórios temporários separados. O teste de LAB real é explicitamente pulado quando o corpus privado não estiver disponível. Nenhum dado de teste é inserido no acervo de uso.
 
 Há também um teste opcional de navegador com Playwright e Chromium. Instale a ferramenta em uma pasta temporária, sem adicionar dependências ao aplicativo:
 

@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "noese": {
+      "command": "/CAMINHO/NOESE/scripts/mcp.sh",
+      "args": ["--data", "/CAMINHO/NOESE/var"]
+    }
+  }
+}

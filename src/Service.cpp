@@ -242,6 +242,8 @@ json Service::record(const std::string &type, json in, int window) {
               {{"type", type},
                {"version", out["version"]},
                {"reason", in.value("revision_reason", "")},
+               {"source_type", in.value("source_type", "local_session")},
+               {"source_ref", in.value("source_ref", "local")},
                {"inquiry_id", in.value("inquiry_id", out["id"].get<std::string>())},
                {"window", effective}});
   tx.commit();
@@ -615,6 +617,11 @@ json Service::purge(const std::string &id, const std::string &confirm) {
   Transaction tx(store);
   for (auto &[t, rid] : rows)
     store.change("DELETE FROM " + t + " WHERE id=?", {rid});
+  for (auto &rid : removed) {
+    store.change("UPDATE operation_requests SET result='{\"erased\":true}',revoked=1 WHERE "
+                 "instr(result,?)>0",
+                 {rid});
+  }
   store.change("DELETE FROM artifacts WHERE id=?", {id});
   store.change("DELETE FROM artifact_fts WHERE id=?", {id});
   for (auto &rid : removed)

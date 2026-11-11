@@ -7,6 +7,7 @@ Todas as leituras aceitam `window=0|1|2`, padrão 2. Listagens aceitam `limit` (
 | Rota | Operação |
 |---|---|
 | `GET /health` (fora de `/api/v1`) | Readiness técnico, SQLite e limite do marco |
+| `GET /tools` | Catálogo de ferramentas MCP, schemas e indicação de leitura/escrita; não executa operações |
 | `GET /artifacts` | Fontes e limites de processamento |
 | `POST /artifacts` | Multipart `file` + JSON opcional `metadata`; bytes preservados |
 | `GET /artifacts/{id}` | Metadados e hash |

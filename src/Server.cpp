@@ -1,4 +1,4 @@
-#include "Service.hpp"
+#include "Operations.hpp"
 #include <httplib.h>
 #include <iostream>
 namespace {
@@ -92,6 +92,11 @@ void serve(Service &svc, int port) {
                                                             : "text/html; charset=utf-8");
     });
   }
+  server.Get("/api/v1/tools", [&](const auto &, auto &res) {
+    send(res, {{"tools", operation_catalog(true)},
+               {"transport", "MCP stdio"},
+               {"default_mode", "read_only"}});
+  });
   server.Get("/api/v1/session", [&](const auto &, auto &res) {
     send(res, {{"token", token}, {"authority", "local single user"}});
   });

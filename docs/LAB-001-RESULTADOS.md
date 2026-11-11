@@ -6,7 +6,7 @@ Verificação em 2026-11-10 (America/Sao_Paulo). GCC 16.2.1, `-std=c++26` explí
 
 | Requisito / gate | Código ou rota | Execução / evidência | Limitação | Estado |
 |---|---|---|---|---|
-| G-01 C++26 | CMake, `scripts/verify.sh` | Flag conferida no compile_commands; CTest com 12 cenários | Suporte do compilador é experimental; não usa reflection/contracts | Verificado tecnicamente |
+| G-01 C++26 | CMake, `scripts/verify.sh` | Flag conferida no compile_commands; CTest com 23 cenários (12 HTTP e 11 MCP) | Suporte do compilador é experimental; não usa reflection/contracts | Verificado tecnicamente |
 | G-02 Original | Store::object; `/artifacts` | Bytes e SHA-256 reabertos; contextos distintos com mesmo hash | Hash não autentica autoria nem verdade | Verificado tecnicamente |
 | G-03 Âncora | Service::anchor; UI seleção | UTF-8, fragmento divergente e intervalos inválidos testados; browser volta ao mark | Binários sem interpretação usam unresolved | Verificado tecnicamente |
 | G-04 Autoria e tempo | Fonte + occurrences | Autor atribuído separado do importador; timestamps de falas nulos no LAB | Corpus sem metadados históricos integrais | Verificado no escopo disponível |
@@ -31,3 +31,5 @@ As regras de possibilidades são desmontáveis: fonte com `processing=NOT_INDEXE
 Faltam para aceitar `READY / NOESE_M1`: executar o protocolo com o pesquisador, julgar pertinência e alternativas dos candidatos, documentar consequências contrastáveis e revisar a usabilidade. A transcrição integral, fontes externas independentes, OCR, semântica multimodal, mesclagem de pacotes e execução externa não estão disponíveis nesta versão.
 
 Correção após uso: o botão de exploração inicialmente bloqueava a leitura de possibilidades sem uma investigação prévia. O retorno do usuário mostrou a barreira. A precondição foi removida, a exploração passou a considerar a fonte selecionada e a interface passou a mostrar também a ausência de candidatos no próprio painel. Os testes de regressão verificam exame sem escrita, cancelamento sem registros, abertura de percurso somente ao salvar, âncora exata e isolamento de janelas.
+
+Integração MCP: implementado stdio em C++26 com leitura por padrão, escrita explícita, origem do cliente, propostas candidatas e controle de revisão. O mesmo acervo é usado pelo HTTP/MCP com lock entre processos; repetição segura confirma efeitos e resultado numa transação. Onze cenários MCP e o cliente do SDK oficial TypeScript verificaram negociação, contratos, compartilhamento, janelas, concorrência, idempotência, exclusão e fronteiras de autoridade. Evidência adicional em `build/mcp/sdk-results.json`. A integração não constitui avaliação científica nem instalação automática no ChatGPT.
