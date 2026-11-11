@@ -132,3 +132,9 @@ Servidor limitado a loopback, acervo privado, até 16 MiB por fonte, quatro thre
 As bibliotecas HTTP e JSON estão incluídas com versão, licença e hashes em [DEPENDENCIES.md](docs/DEPENDENCIES.md); o build não baixa código. A licença do núcleo NOESE ainda não foi escolhida.
 
 [Decisões de arquitetura](docs/ADR-001-FRONTEIRAS.md) · [API](docs/API.md) · [Segurança e retenção](docs/OPERACAO.md)
+
+## Premissas de desenvolvimento
+
+**Simples, leve. Sempre pronto. Sempre incompleto!**
+
+[Significado e símbolos das premissas](docs/sister-principles/README.md).
