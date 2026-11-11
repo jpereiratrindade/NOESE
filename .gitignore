@@ -1,0 +1,6 @@
+/build/
+/var/
+/docs/reference/
+/fixtures/lab001/
+__pycache__/
+*.log

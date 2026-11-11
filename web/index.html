@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>NOESE — Mesa de investigação</title>
+    <link rel="stylesheet" href="/style.css" />
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <header>
+      <a class="brand" href="/"
+        >n<span>o</span>ese<span class="brand-dot">.</span></a
+      >
+      <div class="identity">
+        MESA DE INVESTIGAÇÃO<small>Fontes, percursos e possibilidades</small>
+      </div>
+      <div class="header-actions">
+        <label
+          >Recorte
+          <select id="window" aria-label="Janela de conhecimento">
+            <option value="0">J0 · Concepção</option>
+            <option value="1">J1 · Contraste</option>
+            <option value="2" selected>J2 · Reflexividade / acervo</option>
+          </select></label
+        ><button id="backup" class="quiet">Criar backup</button>
+      </div>
+    </header>
+    <div class="toolbar">
+      <div>
+        <span class="live-dot"></span> ACERVO LOCAL
+        <span class="separator">/</span
+        ><select id="inquiry" aria-label="Investigação atual">
+          <option value="">Escolha um percurso</option>
+        </select>
+      </div>
+      <div>
+        <button id="new-inquiry">+ Abrir investigação</button
+        ><button id="timeline" class="quiet hidden">Trajetória</button
+        ><a id="export" class="button quiet hidden">Exportar percurso ↗</a>
+      </div>
+    </div>
+    <div id="status" role="status" aria-live="polite">
+      Abra uma fonte ou comece uma investigação sem precisar definir uma
+      pergunta.
+    </div>
+    <main>
+      <aside class="sources">
+        <div class="section-heading">
+          <h1>Fontes</h1>
+          <span id="source-count" class="count">0</span>
+        </div>
+        <p class="muted">O que foi registrado, com seus limites.</p>
+        <label id="drop" class="dropzone" tabindex="0">
+          <span class="upload-icon">↥</span><strong>Examinar uma fonte</strong
+          ><span>Arraste arquivos ou selecione</span
+          ><input id="upload" type="file" multiple class="sr-only"
+        /></label>
+        <form id="search-form" class="search">
+          <input
+            id="search"
+            type="search"
+            placeholder="Buscar no texto indexado…"
+            aria-label="Buscar nas fontes"
+          /><button aria-label="Buscar">↵</button>
+        </form>
+        <div id="source-list" class="source-list"></div>
+        <button id="more-sources" class="quiet hidden">
+          Carregar mais fontes
+        </button>
+        <div class="lab-box">
+          <span class="eyebrow">LABORATÓRIO INAUGURAL</span>
+          <h2>A conversa fundadora</h2>
+          <p>
+            21 excertos curados. Corpus parcial, sem horários por mensagem e sem
+            fontes externas independentes.
+          </p>
+          <button id="lab">Importar LAB-001 neste recorte</button>
+        </div>
+        <button id="capabilities" class="quiet wide">
+          Capacidades e limites ↗
+        </button>
+      </aside>
+      <section class="reader">
+        <div class="section-heading">
+          <span class="eyebrow">LEITURA DA FONTE</span>
+          <div>
+            <button id="source-history" class="quiet hidden">
+              Proveniência</button
+            ><a id="original" class="button quiet hidden">Original ↓</a>
+          </div>
+        </div>
+        <div id="reader-empty" class="empty">
+          <div class="orb">∴</div>
+          <h1>Uma investigação começa<br />com algo que merece atenção.</h1>
+          <p>
+            Abra uma fonte para ler, selecionar trechos<br />e colocar
+            interpretações em questão.
+          </p>
+          <span class="footnote"
+            >Fonte ≠ interpretação · Evidência ≠ verdade externa</span
+          >
+        </div>
+        <div id="reader-body" class="hidden">
+          <h1 id="source-title"></h1>
+          <div id="source-meta" class="meta"></div>
+          <div id="selection-bar">
+            <span id="selection-label"
+              >Selecione um trecho para ancorar uma nota.</span
+            ><button id="annotate">+ Anotar</button>
+          </div>
+          <pre id="source-text" tabindex="0"></pre>
+          <img id="source-image" alt="Original importado" class="hidden" />
+          <p id="preview-limit" class="hidden muted">
+            Este original foi preservado. A prévia e a busca não interpretam
+            este formato.
+          </p>
+        </div>
+      </section>
+      <aside class="investigation">
+        <div class="section-heading">
+          <h1>Percurso</h1>
+          <button id="free-note" class="quiet">+ Nota</button>
+        </div>
+        <p class="muted">Interpretações que podem ser revistas.</p>
+        <div class="investigation-actions">
+          <button id="relate">Relacionar</button
+          ><button id="compare">Comparar trechos</button>
+        </div>
+        <div class="exploration">
+          <span class="eyebrow">POSSIBILIDADES</span>
+          <p>
+            O que ainda não consideramos?<br />Quem ou o que poderia contribuir?
+          </p>
+          <button id="explore">Examinar possibilidades ↗</button>
+        </div>
+        <div id="candidate-list"></div>
+        <div id="notes-empty" class="small-empty">
+          Abra um percurso para reunir notas, relações, contrapontos e decisões.
+        </div>
+        <div id="notes"></div>
+        <button id="more-notes" class="quiet hidden">
+          Carregar mais registros
+        </button>
+      </aside>
+    </main>
+    <footer>
+      <span>NOESE <span class="muted">/ 0.1.0 · local</span></span
+      ><span>Uma interpretação permanece aberta à crítica.</span
+      ><span class="muted">M1: avaliação pendente</span>
+    </footer>
+    <dialog id="dialog">
+      <form id="dialog-form">
+        <div class="section-heading">
+          <h2 id="dialog-title"></h2>
+          <button
+            id="dialog-close"
+            type="button"
+            class="quiet"
+            aria-label="Fechar"
+          >
+            ✕
+          </button>
+        </div>
+        <div id="dialog-content"></div>
+        <div id="dialog-actions">
+          <button id="dialog-cancel" type="button" class="quiet">
+            Cancelar</button
+          ><button id="dialog-submit" type="submit" class="primary">
+            Salvar
+          </button>
+        </div>
+      </form>
+    </dialog>
+  </body>
+</html>

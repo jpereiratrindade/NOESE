@@ -1,0 +1,2 @@
+# Preserve upstream files verbatim; their whitespace is part of the vendored bytes.
+third_party/** -whitespace
