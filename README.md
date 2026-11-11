@@ -24,6 +24,27 @@ Abra **http://127.0.0.1:8787**. O endereço deve usar `127.0.0.1`, pois o servid
 
 O remoto está configurado para `git@github.com:jpereiratrindade/NOESE.git`. A configuração não publica código ou fontes.
 
+## Iniciar com o sistema
+
+Após compilar, instale o serviço systemd do usuário:
+
+```bash
+./scripts/install-service.py
+systemctl --user status noese.service
+journalctl --user -u noese.service -f
+```
+
+O instalador valida a unidade, habilita o início automático e inicia o NOESE em `127.0.0.1:8787` com o acervo `var/`. Aceita `--data /caminho/do/acervo` e `--port 8788`; `--dry-run` mostra a configuração sem instalá-la. Pare uma instância iniciada manualmente antes de instalar na mesma porta. Com o serviço ativo, use o endereço web diretamente, sem iniciar outra cópia com `run.sh`.
+
+O serviço do usuário inicia antes do login quando `Linger=yes`. O instalador informa esse estado; se necessário, habilite-o com `loginctl enable-linger "$USER"`. A unidade usa `Restart=on-failure`, permissões privadas e logs no journal. Os caminhos do checkout e do acervo devem estar disponíveis no boot.
+
+Depois de recompilar ou mover o checkout, reinstale a unidade para atualizar os caminhos. Para apenas reiniciar ou desabilitar:
+
+```bash
+systemctl --user restart noese.service
+systemctl --user disable --now noese.service
+```
+
 ## Primeiro percurso
 
 1. Use **Abrir investigação**; o título é opcional e nenhuma hipótese é exigida.

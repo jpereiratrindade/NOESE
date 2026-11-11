@@ -1,0 +1,18 @@
+[Unit]
+Description=NOESE — mesa local de investigação
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=exec
+WorkingDirectory=@ROOT@
+ExecStart=@EXECUTABLE@ --data @DATA@ --port @PORT@
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=15
+UMask=0077
+NoNewPrivileges=yes
+SyslogIdentifier=noese
+
+[Install]
+WantedBy=default.target
