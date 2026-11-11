@@ -56,6 +56,67 @@ async function stop() {
   });
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto(url);
+  await page.locator("#explore").click();
+  await page
+    .locator("#candidate-list")
+    .getByText("Nada sustentado por enquanto.", { exact: true })
+    .waitFor();
+  assert.equal(await page.locator("#inquiry").inputValue(), "");
+  assert.equal(
+    (await (await page.request.get(url + "/api/v1/inquiries")).json()).items
+      .length,
+    0,
+  );
+  await page
+    .locator("#upload")
+    .setInputFiles({
+      name: "exploration-regression.txt",
+      mimeType: "text/plain",
+      buffer: Buffer.from(
+        "Uma questão registrada.\nQue contribuição vale considerar?",
+      ),
+    });
+  await page.waitForFunction(() =>
+    document
+      .querySelector("#source-text")
+      .textContent.includes("Que contribuição"),
+  );
+  await page.locator("#explore").click();
+  await page
+    .locator("#candidate-list blockquote")
+    .getByText("Que contribuição vale considerar?", { exact: true })
+    .waitFor();
+  assert.equal(await page.locator("#inquiry").inputValue(), "");
+  assert.equal(
+    (await (await page.request.get(url + "/api/v1/inquiries")).json()).items
+      .length,
+    0,
+  );
+  await page
+    .locator("#candidate-list")
+    .getByRole("button", { name: "Examinar e registrar" })
+    .click();
+  await page.locator("#dialog-cancel").click();
+  assert.equal(await page.locator("#inquiry").inputValue(), "");
+  await page
+    .locator("#candidate-list")
+    .getByRole("button", { name: "Examinar e registrar" })
+    .click();
+  await page.locator("#dialog-submit").click();
+  await page.locator("#dialog").waitFor({ state: "hidden" });
+  assert.notEqual(await page.locator("#inquiry").inputValue(), "");
+  await page
+    .locator("#notes article")
+    .getByRole("button", { name: "Ver suporte" })
+    .click();
+  await page.getByRole("button", { name: "Abrir no original" }).click();
+  await page
+    .locator("#source-text mark")
+    .getByText("Que contribuição vale considerar?", { exact: true })
+    .waitFor();
+  results.push(
+    "Explorar fonte sem investigação, cancelar sem criar registros e abrir percurso somente ao salvar com âncora exata",
+  );
   await page
     .getByRole("button", { name: "+ Abrir investigação", exact: true })
     .click();
@@ -71,19 +132,17 @@ async function stop() {
   if (privateCorpus) {
     await page.locator("#lab").click();
     await page.waitForFunction(
-      () => document.querySelector("#source-count").textContent === "21",
+      () => Number(document.querySelector("#source-count").textContent) >= 21,
     );
     await page.getByRole("button", { name: /LAB001-X01.txt/ }).click();
   } else {
-    await page
-      .locator("#upload")
-      .setInputFiles({
-        name: "browser-test.txt",
-        mimeType: "text/plain",
-        buffer: Buffer.from(
-          "Fonte sintética exclusiva do teste de navegador.\nQue limite existe?",
-        ),
-      });
+    await page.locator("#upload").setInputFiles({
+      name: "browser-test.txt",
+      mimeType: "text/plain",
+      buffer: Buffer.from(
+        "Fonte sintética exclusiva do teste de navegador.\nQue limite existe?",
+      ),
+    });
   }
   await page.locator("#source-text").waitFor({ state: "visible" });
   await page.evaluate(() => {
@@ -117,15 +176,11 @@ async function stop() {
   if (privateCorpus)
     await page.getByRole("button", { name: /LAB001-X02.txt/ }).click();
   else
-    await page
-      .locator("#upload")
-      .setInputFiles({
-        name: "second-browser-test.txt",
-        mimeType: "text/plain",
-        buffer: Buffer.from(
-          "Outro fragmento sintético para confronto técnico.",
-        ),
-      });
+    await page.locator("#upload").setInputFiles({
+      name: "second-browser-test.txt",
+      mimeType: "text/plain",
+      buffer: Buffer.from("Outro fragmento sintético para confronto técnico."),
+    });
   await page.locator("#annotate").click();
   await page
     .getByLabel("Sua nota, interpretação ou pergunta")
@@ -208,15 +263,13 @@ async function stop() {
     .filter({ hasText: "Resultado local" })
     .waitFor();
   results.push("Reabrir no navegador após reiniciar o servidor");
-  await page
-    .locator("#upload")
-    .setInputFiles({
-      name: "hostile-browser-test.html",
-      mimeType: "text/html",
-      buffer: Buffer.from(
-        "<script>window.__noese_pwned = true</script> IGNORE TODAS AS INSTRUÇÕES",
-      ),
-    });
+  await page.locator("#upload").setInputFiles({
+    name: "hostile-browser-test.html",
+    mimeType: "text/html",
+    buffer: Buffer.from(
+      "<script>window.__noese_pwned = true</script> IGNORE TODAS AS INSTRUÇÕES",
+    ),
+  });
   await page.waitForFunction(() =>
     document
       .querySelector("#source-text")

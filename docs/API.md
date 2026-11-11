@@ -25,7 +25,7 @@ Todas as leituras aceitam `window=0|1|2`, padrão 2. Listagens aceitam `limit` (
 | `GET, POST /inquiry_members` | Associar `reference` ao percurso sem interpretação obrigatória |
 | `PUT /{recurso}/{id}` | Nova versão para recursos investigativos; exige `version` atual e `revision_reason` |
 | `GET /history/{tipo}/{id}` | Versões e eventos disponíveis na janela; para investigação agrega eventos vinculados |
-| `GET /explore/{inquiry_id}` | Regras transparentes de cobertura/perguntas; até 500 itens por categoria |
+| `GET /explore` ou `/explore/{inquiry_id}` | Exploração sem percurso obrigatório; `artifact_id` opcional limita a fonte examinada. Primeira interrogação da fonte com citação e localizador, cobertura e perguntas nos enunciados do percurso. Até 500 itens por categoria; GET não cria registros |
 | `GET /capabilities` | Propósito, contratos, disponibilidade, versão e limites |
 | `POST /runs` | Comparação local autorizada: `contribution_id`, `left_anchor`, `right_anchor` |
 | `GET /runs` | Tentativas de comparação efetivamente realizadas |

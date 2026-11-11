@@ -313,10 +313,12 @@ json Service::history(const std::string &type, const std::string &id, int window
           {"events", filtered},
           {"limitation", "Ordem de registro não é data da fala nem relação causal"}};
 }
-json Service::explore(const std::string &inquiry, int window) {
-  store.get("inquiries", inquiry, window);
+json Service::explore(const std::string &inquiry, int window, const std::string &artifact) {
+  if (!inquiry.empty())
+    store.get("inquiries", inquiry, window);
   json candidates = json::array();
-  auto sources = store.list("artifacts", window, "", 500);
+  auto sources = artifact.empty() ? store.list("artifacts", window, "", 500)
+                                  : json::array({store.get("artifacts", artifact, window)});
   for (auto &a : sources) {
     if (a["processing"] == "NOT_INDEXED")
       candidates.push_back(
@@ -329,8 +331,45 @@ json Service::explore(const std::string &inquiry, int window) {
            {"status", "INFERRED_CANDIDATE"},
            {"scope", "Fontes locais catalogadas nesta janela"}});
   }
-  auto notes = store.list("statements", window, inquiry, 500);
-  auto assessments = store.list("assessments", window, inquiry, 500);
+  if (!artifact.empty()) {
+    auto a = sources[0];
+    if (a["processing"] == "INDEXED") {
+      auto bytes = store.object(a["sha256"]);
+      auto question = bytes.find('?');
+      if (question != std::string::npos) {
+        auto line = bytes.rfind('\n', question);
+        size_t start = line == std::string::npos ? 0 : line + 1;
+        if (question - start > 1000) {
+          start = question - 1000;
+          while (start < question && ((unsigned char)bytes[start] & 0xc0) == 0x80)
+            ++start;
+        }
+        while (start < question &&
+               (bytes[start] == ' ' || bytes[start] == '\r' || bytes[start] == '\t'))
+          ++start;
+        auto quote = bytes.substr(start, question + 1 - start);
+        candidates.push_back({{"rule", "source.question.review.v1"},
+                              {"text", "Examinar a pergunta registrada nesta fonte e confrontá-la "
+                                       "com outras passagens antes de propor uma contribuição."},
+                              {"quote", quote},
+                              {"anchor",
+                               {{"artifact_id", a["id"]},
+                                {"start", start},
+                                {"end", question + 1},
+                                {"quote", quote}}},
+                              {"basis", json::array({{{"type", "artifacts"}, {"id", a["id"]}}})},
+                              {"proposed_capability", "human-assessment"},
+                              {"alternative", "A pergunta pode já ter resposta em outra passagem; "
+                                              "deixá-la em aberto também é uma decisão possível."},
+                              {"status", "INFERRED_CANDIDATE"},
+                              {"scope", "Primeira interrogação literal da fonte selecionada; não "
+                                        "foi verificada a existência de resposta."}});
+      }
+    }
+  }
+  auto notes = inquiry.empty() ? json::array() : store.list("statements", window, inquiry, 500);
+  auto assessments =
+      inquiry.empty() ? json::array() : store.list("assessments", window, inquiry, 500);
   for (auto &n : notes) {
     if (n.value("text", "").find('?') == std::string::npos)
       continue;
@@ -349,15 +388,22 @@ json Service::explore(const std::string &inquiry, int window) {
            {"status", "INFERRED_CANDIDATE"},
            {"scope", "Até 500 enunciados e avaliações desta investigação nesta janela"}});
   }
-  return {
-      {"items", candidates},
-      {"status", candidates.empty() ? "NO_GROUNDED_OPPORTUNITY" : "CANDIDATES"},
-      {"window", window},
-      {"rules",
-       json::array({"coverage.not_indexed.v1: processing == NOT_INDEXED",
-                    "question.no_assessment.v1: '?' no texto e ausência de avaliação vinculada"})},
-      {"limitation", "Regras literais e desmontáveis; não detectam importância científica, "
-                     "respostas implícitas ou ausência no mundo. Até 500 fontes/itens."}};
+  return {{"items", candidates},
+          {"status", candidates.empty() ? "NO_GROUNDED_OPPORTUNITY" : "CANDIDATES"},
+          {"window", window},
+          {"scope",
+           {{"artifact_id", artifact.empty() ? json(nullptr) : json(artifact)},
+            {"inquiry_id", inquiry.empty() ? json(nullptr) : json(inquiry)},
+            {"source_count", sources.size()},
+            {"statement_count", notes.size()}}},
+          {"rules",
+           json::array({"coverage.not_indexed.v1: processing == NOT_INDEXED",
+                        "question.no_assessment.v1: '?' no texto e ausência de avaliação vinculada",
+                        "source.question.review.v1: primeira interrogação literal da fonte "
+                        "selecionada; não verifica resposta"})},
+          {"limitation", "Regras literais e desmontáveis; não detectam importância científica, "
+                         "respostas ou ausência no mundo. Só procura perguntas na fonte "
+                         "selecionada e nos enunciados do percurso aberto. Até 500 fontes/itens."}};
 }
 json Service::run(json in, int window) {
   auto contribution = store.get("contributions", require_text(in, "contribution_id"), window);

@@ -101,6 +101,7 @@ function requireInquiry() {
   return state.inquiry.id;
 }
 async function refreshInquiries() {
+  $("candidate-list").replaceChildren();
   const saved = state.inquiry?.id || localStorage.getItem("noese.inquiry");
   const data = await api("inquiries?limit=500");
   $("inquiry").replaceChildren(new Option("Escolha um percurso", ""));
@@ -168,6 +169,7 @@ async function refreshSources() {
     );
 }
 async function openSource(a, anchor = null) {
+  $("candidate-list").replaceChildren();
   state.artifact = a;
   state.selection = null;
   state.text = "";
@@ -595,9 +597,28 @@ function relate() {
   );
 }
 async function explore() {
-  const id = requireInquiry();
-  const result = await api("explore/" + id);
+  const inquiry = state.inquiry;
+  const artifact = state.artifact;
+  const route = inquiry ? "explore/" + inquiry.id : "explore";
+  const result = await api(
+    route + (artifact ? "?artifact_id=" + artifact.id : ""),
+  );
   $("candidate-list").replaceChildren();
+  if (!result.items.length) {
+    const empty = node("div", undefined, "card");
+    empty.append(
+      node("p", "Nada sustentado por enquanto."),
+      node(
+        "p",
+        artifact
+          ? "As regras atuais não encontraram um candidato nesta fonte. Você pode anotar uma dúvida ou examinar outra fonte."
+          : "Selecione uma fonte para examinar perguntas registradas nela. Não é preciso abrir uma investigação antes.",
+        "muted",
+      ),
+      node("p", result.limitation, "muted"),
+    );
+    $("candidate-list").append(empty);
+  }
   for (const c of result.items) {
     const card = node("article", undefined, "card candidate-card");
     card.append(
@@ -605,25 +626,58 @@ async function explore() {
       node("p", c.text),
       node("small", c.rule + " · J" + state.window),
     );
+    if (c.quote) card.append(node("blockquote", c.quote));
+    card.append(node("p", c.scope, "muted"));
     card.append(
       action("Examinar e registrar", () => {
         let text;
+        let active = inquiry;
         modal(
           "Considerar uma possibilidade",
           () => {
             text = input("Possibilidade proposta", "textarea", c.text);
+            text.required = true;
+            if (!inquiry)
+              $("dialog-content").append(
+                node(
+                  "p",
+                  "Ao salvar, um percurso será aberto para preservar esta possibilidade e suas futuras revisões.",
+                  "dialog-note",
+                ),
+              );
             $("dialog-content").append(
               node("p", "Alternativa: " + c.alternative, "dialog-note"),
               node("p", result.limitation, "dialog-note"),
             );
           },
           async () => {
+            if (!active) {
+              active = await api("inquiries", {
+                method: "POST",
+                body: {
+                  title: artifact
+                    ? "Investigação · " + artifact.filename
+                    : "Investigação aberta",
+                  status: "UNRESOLVED",
+                },
+              });
+              state.inquiry = active;
+              await refreshInquiries();
+            }
+            let basis = c.basis;
+            if (c.anchor) {
+              const anchor = await api("anchors", {
+                method: "POST",
+                body: c.anchor,
+              });
+              basis = [{ type: "anchors", id: anchor.id }];
+            }
             await api("opportunities", {
               method: "POST",
               body: {
-                inquiry_id: id,
+                inquiry_id: active.id,
                 text: text.value,
-                basis: c.basis,
+                basis,
                 status: "INFERRED_CANDIDATE",
                 rule: c.rule,
                 alternative: c.alternative,

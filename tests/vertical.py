@@ -253,6 +253,26 @@ class Vertical(unittest.TestCase):
         self.assertNotEqual(result.returncode,0)
         self.assertFalse((Path(self.tmp.name)/'bad-restore').exists())
 
+    def test_12_explore_source_without_inquiry_is_read_only(self):
+        before=len(self.request('/api/v1/inquiries?limit=500')['items'])
+        content='Contexto anterior.\n  Que contribuição falta? Outra pergunta?'.encode()
+        a=self.upload('explore-without-inquiry.txt',content,window=0)
+        result=self.request('/api/v1/explore?artifact_id='+a['id'],window=0)
+        self.assertIsNone(result['scope']['inquiry_id'])
+        self.assertEqual(result['scope']['source_count'],1)
+        question=next(c for c in result['items'] if c['rule']=='source.question.review.v1')
+        self.assertEqual(question['quote'],'Que contribuição falta?')
+        locator=question['anchor']
+        self.assertEqual(content[locator['start']:locator['end']].decode(),question['quote'])
+        self.assertIn('não foi verificada',question['scope'])
+        self.assertEqual(len(self.request('/api/v1/inquiries?limit=500')['items']),before)
+        plain=self.upload('no-question.txt',b'Texto sem pergunta.',window=0)
+        empty=self.request('/api/v1/explore?artifact_id='+plain['id'],window=0)
+        self.assertEqual(empty['status'],'NO_GROUNDED_OPPORTUNITY')
+        future=self.upload('future-question.txt',b'Question?',window=2)
+        self.request('/api/v1/explore?artifact_id='+future['id'],window=0,expected=404)
+        self.request('/api/v1/explore?artifact_id='+('0'*32),expected=404)
+
     @unittest.skipUnless((ROOT/'fixtures/lab001/NOESE-LAB-001-corpus.jsonl').exists(),'Private corpus not present')
     def test_11_real_lab_partial_windows(self):
         for window,count in [(0,10),(1,15),(2,21)]:

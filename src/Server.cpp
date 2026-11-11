@@ -155,9 +155,14 @@ void serve(Service &svc, int port) {
     std::lock_guard lock(svc.store.mutex);
     send(res, svc.history(req.matches[1], req.matches[2], integer(req, "window", 2, 2)));
   });
+  server.Get("/api/v1/explore", [&](const auto &req, auto &res) {
+    std::lock_guard lock(svc.store.mutex);
+    send(res, svc.explore("", integer(req, "window", 2, 2), req.get_param_value("artifact_id")));
+  });
   server.Get(R"(/api/v1/explore/([a-f0-9]{32}))", [&](const auto &req, auto &res) {
     std::lock_guard lock(svc.store.mutex);
-    send(res, svc.explore(req.matches[1], integer(req, "window", 2, 2)));
+    send(res, svc.explore(req.matches[1], integer(req, "window", 2, 2),
+                          req.get_param_value("artifact_id")));
   });
   server.Post("/api/v1/runs", [&](const auto &req, auto &res) {
     std::lock_guard lock(svc.store.mutex);

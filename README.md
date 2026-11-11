@@ -30,7 +30,7 @@ O remoto está configurado para `git@github.com:jpereiratrindade/NOESE.git`. A c
 2. Arraste arquivos para **Examinar uma fonte**. Qualquer formato é preservado com SHA-256; texto UTF-8 é indexado, PNG/JPEG têm prévia e outros binários são marcados `NOT_INDEXED`.
 3. Selecione um trecho na leitura e clique **Anotar**. A nota aponta para os bytes UTF-8 exatos, separada do original. **Ver suporte** retorna ao trecho.
 4. Use **Relacionar**, **Revisar** e **Avaliar**. As revisões exigem razão e versão, preservando a anterior; edições concorrentes retornam conflito.
-5. **Examinar possibilidades** aplica duas regras publicadas: fonte não indexada e enunciado com `?` sem avaliação vinculada. Os resultados são candidatos para deliberação, sem promessa de relevância científica.
+5. **Examinar possibilidades** pode começar diretamente na fonte, sem abrir um percurso. Aplica três regras publicadas: fonte não indexada, primeira interrogação na fonte selecionada e enunciado com `?` sem avaliação vinculada. A existência de uma pergunta não implica ausência de resposta. Um percurso é aberto somente ao salvar um candidato, quando ainda não há um selecionado. Os resultados são candidatos para deliberação, sem promessa de relevância científica.
 6. **Comparar trechos** registra proposta e autorização delimitada, executa uma comparação literal local e permite avaliar o resultado. Consultas externas são somente propostas indisponíveis.
 7. **Trajetória** mostra a ordem dos registros. **Exportar percurso** baixa um pacote JSON com fontes referenciadas, âncoras, versões, eventos, resultados e avaliações.
 
@@ -65,7 +65,7 @@ O pacote de investigação é portável e inspecionável; a restauração do ace
 
 ## Verificação
 
-`verify.sh` compila e executa os 11 cenários HTTP de `tests/vertical.py` via CTest. As bases de teste usam diretórios temporários separados. O teste de LAB real é explicitamente pulado quando o corpus privado não estiver disponível. Nenhum dado de teste é inserido no acervo de uso.
+`verify.sh` compila e executa os 12 cenários HTTP de `tests/vertical.py` via CTest. As bases de teste usam diretórios temporários separados. O teste de LAB real é explicitamente pulado quando o corpus privado não estiver disponível. Nenhum dado de teste é inserido no acervo de uso.
 
 Há também um teste opcional de navegador com Playwright e Chromium. Instale a ferramenta em uma pasta temporária, sem adicionar dependências ao aplicativo:
 
