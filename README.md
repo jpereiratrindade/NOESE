@@ -2,7 +2,7 @@
 
 Aplicação local para investigar fontes e percursos intelectuais: ler originais, ancorar interpretações, confrontar enunciados, registrar possibilidades, autorizar uma comparação local e avaliar suas consequências.
 
-C++26, SQLite/FTS5, um processo HTTP e interface web sem framework ou serviços remotos. O acervo começa vazio. O corpus compartilhado do LAB-001 contém **21 excertos parciais**, sem datas individuais e sem READMEs externos independentes.
+C++26, SQLite/FTS5, um processo HTTP e interface web sem framework. A investigação semântica experimental usa opcionalmente um modelo local via Ollama; fica desativada por padrão. O acervo começa vazio. O corpus compartilhado do LAB-001 contém **21 excertos parciais**, sem datas individuais e sem READMEs externos independentes.
 
 **Estado da entrega: `NOT_READY` para aceitação M1.** O fluxo técnico está implementado e testado; a avaliação humana do laboratório, da pertinência das possibilidades e do ganho investigativo permanece pendente. [Evidências e limites](docs/LAB-001-RESULTADOS.md).
 
@@ -45,7 +45,19 @@ systemctl --user restart noese.service
 systemctl --user disable --now noese.service
 ```
 
-## Primeiro percurso
+## Investigação experimental e página inicial
+
+A página inicial apresenta **O que merece nossa atenção?**, com o estado do observador e os resultados efetivamente preservados. A mesa de leitura, anotações e operações manuais permanece em **http://127.0.0.1:8787/mesa**.
+
+A análise semântica é opcional e **desativada por padrão**. A configuração da página permite selecionar um modelo já instalado no Ollama e um recorte J0/J1/J2; nenhum modelo é baixado automaticamente. Quando habilitado, o observador examina textos disponíveis sem exigir uma pergunta inicial, propõe uma interpretação candidata com citações e alternativas e realiza um contraponto com o **mesmo modelo**, sem independência entre os passes. Citações precisam corresponder a trechos literais únicos nas fontes; isso verifica os bytes, não a validade da interpretação. Contribuições externas permanecem propostas, sem execução.
+
+O contexto é limitado a 32 fontes, 4.000 bytes por fonte e 24.000 bytes no total. Exclusões e truncamentos são registrados. As execuções preservam os dados utilizados, respostas do modelo, rejeições, limites e vínculos aos originais. Alterações no acervo ou críticas humanas permitem um novo ciclo; o mesmo recorte inalterado reutiliza o resultado preservado. Imagens não recebem interpretação semântica.
+
+A configuração privada fica em `<acervo>/investigator.json`, fora do Git. O provedor aceita somente `127.0.0.1` (porta padrão 11434). A inferência usa CPU (`num_gpu: 0`), sem ferramentas, shell ou conectores externos. Pausar desabilita novos ciclos e impede publicar uma saída feita sob configuração anterior; uma chamada já enviada pode continuar no provedor. Para interromper essa chamada, reinicie o NOESE após desabilitar a análise e pare o modelo no Ollama. A pausa não descarrega o modelo automaticamente.
+
+**Limite da entrega:** os testes automatizados usam um provedor determinístico e verificam contratos técnicos. O ensaio com o modelo real no LAB-001 foi interrompido antes de se obter um resultado verificado. Não há avaliação científica independente em corpus novo, e o marco M1 permanece `NOT_READY`.
+
+## Primeiro percurso na mesa
 
 1. Use **Abrir investigação**; o título é opcional e nenhuma hipótese é exigida.
 2. Arraste arquivos para **Examinar uma fonte**. Qualquer formato é preservado com SHA-256; texto UTF-8 é indexado, PNG/JPEG têm prévia e outros binários são marcados `NOT_INDEXED`.
@@ -65,7 +77,7 @@ Para preparar novamente o pacote autorizado em outro checkout:
 python3 scripts/import_lab.py /caminho/NOESE-CAVEMAN-FULL-LAB001-v0.1.0.zip
 ```
 
-Na interface, escolha J0, J1 ou J2 e use **Importar LAB-001 neste recorte**. J0 contém X01–X10; J1 adiciona X11–X15; J2 adiciona X16–X21. A importação é idempotente por origem do excerto. A disponibilidade se aplica a busca, leitura, registros, revisões e exportação. Uma revisão de J2 não substitui a versão recuperada em J0. Arquivos importados manualmente pertencem ao recorte selecionado; o sistema não adivinha quando eram historicamente conhecidos.
+Na mesa (`/mesa`), escolha J0, J1 ou J2 e use **Importar LAB-001 neste recorte**. J0 contém X01–X10; J1 adiciona X11–X15; J2 adiciona X16–X21. A importação é idempotente por origem do excerto. A disponibilidade se aplica a busca, leitura, registros, revisões e exportação. Uma revisão de J2 não substitui a versão recuperada em J0. Arquivos importados manualmente pertencem ao recorte selecionado; o sistema não adivinha quando eram historicamente conhecidos.
 
 Leia o [protocolo](docs/LAB-001-PROTOCOLO.md) antes de interpretar os resultados.
 
@@ -100,13 +112,14 @@ O pacote de investigação é portável e inspecionável; a restauração do ace
 
 ## Verificação
 
-`verify.sh` compila e executa 12 cenários HTTP de `tests/vertical.py` e 11 cenários MCP de `tests/mcp.py` via CTest. As bases de teste usam diretórios temporários separados. O teste de LAB real é explicitamente pulado quando o corpus privado não estiver disponível. Nenhum dado de teste é inserido no acervo de uso.
+`verify.sh` compila e executa 12 cenários HTTP de `tests/vertical.py` e 11 cenários MCP de `tests/mcp.py`, além de 11 cenários do investigador de `tests/investigator.py`, via CTest. O provedor de teste é simulado e não executa LLM. As bases de teste usam diretórios temporários separados. O teste de LAB real é explicitamente pulado quando o corpus privado não estiver disponível. Nenhum dado de teste é inserido no acervo de uso.
 
 Há também um teste opcional de navegador com Playwright e Chromium. Instale a ferramenta em uma pasta temporária, sem adicionar dependências ao aplicativo:
 
 ```bash
 npm install --prefix /tmp/noese-ui-tools playwright
 NODE_PATH=/tmp/noese-ui-tools/node_modules node tests/browser.cjs
+NODE_PATH=/tmp/noese-ui-tools/node_modules node tests/attention-browser.cjs
 # Se necessário: NOESE_BROWSER=/caminho/do/chromium
 ```
 
@@ -114,7 +127,7 @@ Evidências locais ficam em `build/verification.log`, `build/browser/results.jso
 
 ## Fronteiras e dependências
 
-Servidor limitado a loopback, acervo privado, até 16 MiB por fonte, quatro threads HTTP e operações de banco serializadas. Escritas exigem token de sessão; Host e Origin são verificados. O conteúdo importado é exibido como texto ou imagem e nunca interpretado como código ou instruções. Não há autenticação multiusuário, conector externo, LLM, OCR ou exposição LAN.
+Servidor limitado a loopback, acervo privado, até 16 MiB por fonte, quatro threads HTTP e operações de banco serializadas. Escritas exigem token de sessão; Host e Origin são verificados. O conteúdo importado é exibido como texto ou imagem e nunca interpretado como código ou instruções. Não há autenticação multiusuário, conector externo, OCR ou exposição LAN. O LLM local opcional processa texto como dados não confiáveis e não recebe ferramentas; suas interpretações continuam candidatas sujeitas à crítica.
 
 As bibliotecas HTTP e JSON estão incluídas com versão, licença e hashes em [DEPENDENCIES.md](docs/DEPENDENCIES.md); o build não baixa código. A licença do núcleo NOESE ainda não foi escolhida.
 

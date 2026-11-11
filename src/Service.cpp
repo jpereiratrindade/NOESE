@@ -63,6 +63,18 @@ Service::Service(fs::path root) : store(root) {
       store.save("capabilities", c);
     }
   }
+  try {
+    store.get("capabilities", "semantic-exploration");
+  } catch (const Error &e) {
+    if (e.http != 404)
+      throw;
+    auto semantic =
+        cap("semantic-exploration",
+            "Investigar relações de sentido com modelo local, fontes e contrapontos", true);
+    semantic["availability"] = "REQUIRES_LOCAL_MODEL";
+    semantic["required_permissions"] = "local_processing_configuration";
+    store.save("capabilities", semantic);
+  }
   tx.commit();
 }
 json Service::import_file(const std::string &filename, const std::string &bytes, json meta,

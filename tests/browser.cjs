@@ -55,7 +55,7 @@ async function stop() {
     viewport: { width: 1440, height: 1000 },
   });
   page.on("pageerror", (error) => errors.push(error.message));
-  await page.goto(url);
+  await page.goto(url + "/mesa");
   await page.locator("#explore").click();
   await page
     .locator("#candidate-list")
@@ -67,15 +67,13 @@ async function stop() {
       .length,
     0,
   );
-  await page
-    .locator("#upload")
-    .setInputFiles({
-      name: "exploration-regression.txt",
-      mimeType: "text/plain",
-      buffer: Buffer.from(
-        "Uma questão registrada.\nQue contribuição vale considerar?",
-      ),
-    });
+  await page.locator("#upload").setInputFiles({
+    name: "exploration-regression.txt",
+    mimeType: "text/plain",
+    buffer: Buffer.from(
+      "Uma questão registrada.\nQue contribuição vale considerar?",
+    ),
+  });
   await page.waitForFunction(() =>
     document
       .querySelector("#source-text")

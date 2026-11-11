@@ -1,3 +1,4 @@
+#include "Investigator.hpp"
 #include "Operations.hpp"
 #include <httplib.h>
 #include <iostream>
@@ -26,6 +27,7 @@ void send(httplib::Response &res, const json &j, int status = 200) {
 } // namespace
 void serve(Service &svc, int port) {
   httplib::Server server;
+  Investigator investigator(svc);
   const std::string token = uuid() + uuid();
   const std::string host = "127.0.0.1:" + std::to_string(port), origin = "http://" + host;
   server.new_task_queue = [] { return new httplib::ThreadPool(4); };
@@ -83,8 +85,11 @@ void serve(Service &svc, int port) {
             {"message", "Requisição recusada"}},
            res.status);
   });
-  for (auto file : {"index.html", "app.js", "style.css"}) {
-    std::string route = std::string(file) == "index.html" ? "/" : "/" + std::string(file);
+  for (auto file :
+       {"index.html", "workspace.html", "app.js", "style.css", "attention.js", "attention.css"}) {
+    std::string route = std::string(file) == "index.html"       ? "/"
+                        : std::string(file) == "workspace.html" ? "/mesa"
+                                                                : "/" + std::string(file);
     server.Get(route, [file](const auto &, auto &res) {
       res.set_content(read_file(fs::path(NOESE_ROOT) / "web" / file),
                       std::string(file).ends_with(".js")    ? "application/javascript"
@@ -92,6 +97,16 @@ void serve(Service &svc, int port) {
                                                             : "text/html; charset=utf-8");
     });
   }
+  server.Get("/api/v1/attention", [&](const auto &req, auto &res) {
+    send(res, investigator.view(integer(req, "window", 2, 2)));
+  });
+  server.Get("/api/v1/attention/settings",
+             [&](const auto &, auto &res) { send(res, investigator.settings()); });
+  server.Post("/api/v1/attention/settings",
+              [&](const auto &req, auto &res) { send(res, investigator.configure(body(req))); });
+  server.Post(R"(/api/v1/attention/([a-f0-9]{32})/critique)", [&](const auto &req, auto &res) {
+    send(res, investigator.feedback(req.matches[1], body(req), integer(req, "window", 2, 2)), 201);
+  });
   server.Get("/api/v1/tools", [&](const auto &, auto &res) {
     send(res, {{"tools", operation_catalog(true)},
                {"transport", "MCP stdio"},
@@ -217,7 +232,10 @@ void serve(Service &svc, int port) {
       throw Error(400, "INVALID_INPUT", "Versão atual obrigatória");
     send(res, svc.record(req.matches[1], in, integer(req, "window", 2, 2)));
   });
+  if (!server.bind_to_port("127.0.0.1", port))
+    throw std::runtime_error("Cannot bind loopback port");
+  investigator.start();
   std::cout << "NOESE http://127.0.0.1:" << port << "  data=" << svc.store.root << std::endl;
-  if (!server.listen("127.0.0.1", port))
+  if (!server.listen_after_bind())
     throw std::runtime_error("Cannot bind loopback port");
 }

@@ -102,7 +102,10 @@ function requireInquiry() {
 }
 async function refreshInquiries() {
   $("candidate-list").replaceChildren();
-  const saved = state.inquiry?.id || localStorage.getItem("noese.inquiry");
+  const saved =
+    state.inquiry?.id ||
+    new URLSearchParams(location.search).get("inquiry") ||
+    localStorage.getItem("noese.inquiry");
   const data = await api("inquiries?limit=500");
   $("inquiry").replaceChildren(new Option("Escolha um percurso", ""));
   for (const item of data.items)
@@ -316,12 +319,14 @@ function renderRecord(r) {
     node(
       "p",
       r.text ||
-        (r.output?.equal
-          ? "Os dois trechos são literalmente iguais."
-          : "Os dois trechos apresentam diferenças literais."),
+        (r.capability_id === "semantic-exploration"
+          ? "Investigação semântica preservada. Consulte a visão de atenção para fontes, contrapontos e limites."
+          : r.output?.equal
+            ? "Os dois trechos são literalmente iguais."
+            : "Os dois trechos apresentam diferenças literais."),
     ),
   );
-  if (r._type === "runs") {
+  if (r._type === "runs" && r.capability_id === "text-compare") {
     card.append(
       node("small", "TRECHO A"),
       node("blockquote", r.output.left),
