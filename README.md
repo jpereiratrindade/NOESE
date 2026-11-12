@@ -59,6 +59,17 @@ A configuração privada fica em `<acervo>/investigator.json`, fora do Git. O pr
 
 ## Primeiro percurso na mesa
 
+O [BB-Harness v0.1](docs/BB-HARNESS-001-PROTOCOLO.md) acrescenta um executor Python
+experimental externo para uma investigação delimitada com Ollama e os MCPs do
+NOESE e do MÉTIS. Preserva foco, consultas e desfecho como registros candidatos;
+pertinência, alcance e relevância permanecem sujeitos à avaliação humana.
+Verificação: `python3 tests/bb_harness.py`; pré-condições sem inferência:
+`python3 scripts/bb_harness.py check`. O observador C++ descrito acima mantém
+seu contrato próprio, sem ferramentas.
+O [primeiro ensaio](docs/BB-HARNESS-001-RESULTADO.md) terminou em falha de
+compilação da gramática no Ollama; o percurso da falha foi recuperado no NOESE,
+sem contribuição investigativa demonstrada.
+
 1. Use **Abrir investigação**; o título é opcional e nenhuma hipótese é exigida.
 2. Arraste arquivos para **Examinar uma fonte**. Qualquer formato é preservado com SHA-256; texto UTF-8 é indexado, PNG/JPEG têm prévia e outros binários são marcados `NOT_INDEXED`.
 3. Selecione um trecho na leitura e clique **Anotar**. A nota aponta para os bytes UTF-8 exatos, separada do original. **Ver suporte** retorna ao trecho.
