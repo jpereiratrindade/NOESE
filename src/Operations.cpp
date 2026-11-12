@@ -83,6 +83,23 @@ std::vector<Operation> operations() {
       "Verificar integridade técnica SQLite, fontes e âncoras disponíveis; não certifica mérito "
       "científico.",
       json::object());
+  add("experiences", "Listar experiências preservadas, distinguindo capturas instrumentais e relatos secundários.", page);
+  add("experience", "Recuperar foco inicial, exposição à memória, decisões, respostas e avaliações de uma experiência. Integridade não certifica mérito.",
+      {{"id", str(1, 100)}, {"include_events", {{"type", "boolean"}, {"description", "Padrão false: resumo e desfecho; true inclui eventos. Leia a fonte por artifact para paginação dos bytes originais."}}}}, {"id"});
+  auto capture_kind = str();
+  capture_kind["enum"] = {"trace", "secondary_report"};
+  auto producer = str();
+  producer["enum"] = {"local_harness", "conversation", "human"};
+  auto purpose = str();
+  purpose["enum"] = {"operational_validation", "open_investigation", "directed_investigation", "retrospective"};
+  auto memory = str();
+  memory["enum"] = {"none", "archive", "not_recorded"};
+  add("preserve_experience", "Preservar captura com hashes e ordem verificados ou relato secundário com lacunas explícitas. Não fabrica respostas ausentes nem avaliação humana. Requer request_id estável.",
+      {{"run_id", str(1, 100)}, {"title", str(1, 240)}, {"capture", capture_kind},
+       {"producer", producer}, {"purpose", purpose}, {"memory_policy", memory},
+       {"limitations", str(1, 10000)}, {"journal", str(1, 650000)}, {"report", str(1, 100000)},
+       {"inquiry_id", str(1, 100)}},
+      {"run_id", "title", "capture", "producer", "purpose", "memory_policy", "limitations"}, true);
   add("create_inquiry", "Abrir percurso somente quando solicitado; não exige pergunta ou método.",
       {{"title", str(0, 240)}}, json::array(), true);
   add("import_text",
@@ -169,7 +186,7 @@ void validate(const json &value, const json &schema, const std::string &path = "
       if ((c & 0xc0) != 0x80)
         ++length;
     if (length < schema.value("minLength", 0u) || length > schema.value("maxLength", 100000u) ||
-        text.size() > 400000)
+        text.size() > std::max(400000u, schema.value("maxLength", 100000u)))
       throw Error(400, "INVALID_INPUT", "Comprimento inválido: " + path);
   }
 }
@@ -210,6 +227,12 @@ json dispatch(Service &svc, const std::string &name, const json &args,
               const ClientContext &client) {
   int window = args.value("window", 2), limit = args.value("limit", 100),
       offset = args.value("offset", 0);
+  if (name == "experiences")
+    return svc.experiences(window, limit, offset);
+  if (name == "experience")
+    return svc.experience(args.at("id"), window, args.value("include_events", false));
+  if (name == "preserve_experience")
+    return svc.preserve_experience(args, window, "mcp:" + client.name);
   const std::set<std::string> lists = {"artifacts",   "inquiries",     "statements",
                                        "relations",   "opportunities", "contributions",
                                        "assessments", "anchors",       "runs"};

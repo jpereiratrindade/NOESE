@@ -235,6 +235,7 @@ async function stop() {
     fullPage: true,
   });
   await page.setViewportSize({ width: 390, height: 844 });
+  await require("./identity.cjs")(page);
   assert.ok(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,
@@ -254,6 +255,7 @@ async function stop() {
       "human criticism triggers a new cycle and preserves previous run",
       "J0 does not display J2 output",
       "responsive 1440/390px",
+      "shared identity assets, seven viewport widths and accessible mobile navigation",
       "no JavaScript errors",
     ],
     provider: "DETERMINISTIC_CONTRACT_FIXTURE_NOT_SCIENTIFIC_EVALUATION",

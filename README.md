@@ -70,6 +70,13 @@ O [primeiro ensaio](docs/BB-HARNESS-001-RESULTADO.md) terminou em falha de
 compilação da gramática no Ollama; o percurso da falha foi recuperado no NOESE,
 sem contribuição investigativa demonstrada.
 
+Em **http://127.0.0.1:8787/experiencias**, consulte os percursos preservados,
+importe uma captura instrumental ou um relatório secundário e registre avaliações
+de pertinência, alcance e atenção. O foco inicial e o acesso à memória anterior
+são apresentados com suas lacunas. A [correção e os novos ensaios técnicos](docs/EXPERIENCIAS-INVESTIGATIVAS.md)
+preservam tanto a falha original quanto uma execução posterior com consultas
+escolhidas pelo modelo, cuja candidata foi rejeitada por ausência de confronto.
+
 1. Use **Abrir investigação**; o título é opcional e nenhuma hipótese é exigida.
 2. Arraste arquivos para **Examinar uma fonte**. Qualquer formato é preservado com SHA-256; texto UTF-8 é indexado, PNG/JPEG têm prévia e outros binários são marcados `NOT_INDEXED`.
 3. Selecione um trecho na leitura e clique **Anotar**. A nota aponta para os bytes UTF-8 exatos, separada do original. **Ver suporte** retorna ao trecho.
@@ -133,6 +140,7 @@ Há também um teste opcional de navegador com Playwright e Chromium. Instale a 
 npm install --prefix /tmp/noese-ui-tools playwright
 NODE_PATH=/tmp/noese-ui-tools/node_modules node tests/browser.cjs
 NODE_PATH=/tmp/noese-ui-tools/node_modules node tests/attention-browser.cjs
+NODE_PATH=/tmp/noese-ui-tools/node_modules node tests/experience-browser.cjs
 # Se necessário: NOESE_BROWSER=/caminho/do/chromium
 ```
 
@@ -147,6 +155,10 @@ As bibliotecas HTTP e JSON estão incluídas com versão, licença e hashes em [
 [Decisões de arquitetura](docs/ADR-001-FRONTEIRAS.md) · [API](docs/API.md) · [Segurança e retenção](docs/OPERACAO.md)
 
 ## Premissas de desenvolvimento
+
+A página inicial e a mesa compartilham a identidade visual do MORFO e dos demais
+sistemas SisTer, com símbolo e favicon próprios do NOESE.
+[Identidade visual e arquivos da marca](docs/IDENTIDADE-VISUAL.md).
 
 **Simples, leve. Sempre pronto. Sempre incompleto!**
 

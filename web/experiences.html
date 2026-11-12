@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>NOESE — Experiências investigativas</title>
+    <link rel="stylesheet" href="/attention.css" />
+    <link rel="stylesheet" href="/identity.css" />
+    <link rel="stylesheet" href="/experiences.css" />
+    <meta name="theme-color" content="#071e38" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <script src="/identity.js" defer></script>
+    <script src="/experiences.js" defer></script>
+  </head>
+  <body class="experiences-page">
+    <a class="sister-skip" href="#main">Ir para o conteúdo</a>
+    <div class="sister-shell">
+      <aside
+        class="sister-sidebar"
+        id="sister-sidebar"
+        aria-label="Navegação principal"
+      >
+        <button
+          type="button"
+          class="sister-nav-close"
+          id="sister-nav-close"
+          aria-label="Fechar navegação"
+        >
+          ✕
+        </button>
+        <a class="sister-brand" href="/" aria-label="NOESE, início">
+          <img
+            class="sister-mark"
+            src="/noese-symbol.svg"
+            width="48"
+            height="48"
+            alt=""
+          />
+          <span class="sister-brand-words"
+            ><small>ECOSSISTEMA SisTer</small><strong>NOESE</strong></span
+          >
+        </a>
+        <p class="sister-subtitle">
+          Fontes, percursos e possibilidades de investigação.
+        </p>
+        <p class="sister-nav-label">ESPAÇO DE INVESTIGAÇÃO</p>
+        <nav class="sister-nav" aria-label="Seções do NOESE">
+          <a href="/"
+            ><svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z" />
+              <circle cx="12" cy="12" r="3" /></svg
+            >O que merece atenção</a
+          >
+          <a href="/mesa"
+            ><svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M3 4h7l2 2 2-2h7v16h-7l-2 2-2-2H3V4ZM12 6v16M6 9h3m-3 4h3m6-4h3m-3 4h3"
+              /></svg
+            >Mesa de investigação</a
+          >
+          <a href="/experiencias" aria-current="page"
+            ><svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M5 3h14v18H5zM8 7h8M8 11h8M8 15h5" /></svg
+            >Experiências investigativas</a
+          >
+        </nav>
+        <div class="sister-sidebar-bottom">
+          <section
+            class="sister-principles"
+            aria-label="Princípios de desenvolvimento"
+          >
+            <span class="sister-principles-title"
+              >PRINCÍPIOS DE DESENVOLVIMENTO</span
+            >
+            <ul class="sister-principles-list">
+              <li>
+                <svg
+                  viewBox="0 0 24 24"
+                  width="20"
+                  height="20"
+                  aria-hidden="true"
+                >
+                  <path d="M20 4C12 2 4 8 5 15l4 4c7 1 13-7 11-15Z" />
+                  <path d="M3 21 16 8M8 16v-5m0 5h5" /></svg
+                ><span>Simples, leve.</span>
+              </li>
+              <li>
+                <svg
+                  viewBox="0 0 24 24"
+                  width="20"
+                  height="20"
+                  aria-hidden="true"
+                >
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="m8 12 3 3 5-6" /></svg
+                ><span>Sempre pronto.</span>
+              </li>
+              <li>
+                <svg
+                  viewBox="0 0 24 24"
+                  width="20"
+                  height="20"
+                  aria-hidden="true"
+                >
+                  <path d="M20 8a9 9 0 1 0 0 8" />
+                  <path d="M20 3v6h-6" /></svg
+                ><span>Sempre incompleto!</span>
+              </li>
+            </ul>
+          </section>
+          <div class="sister-local">Ambiente local<span>v0.1.0</span></div>
+        </div>
+      </aside>
+      <button
+        type="button"
+        id="sister-scrim"
+        class="sister-scrim"
+        aria-label="Fechar navegação"
+        hidden
+      ></button>
+      <div class="sister-workspace">
+        <header class="sister-topbar">
+          <button
+            type="button"
+            class="sister-menu"
+            id="sister-menu"
+            aria-label="Abrir navegação"
+            aria-controls="sister-sidebar"
+            aria-expanded="false"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+          <div class="sister-crumb">
+            <span>NOESE</span><b aria-hidden="true">/</b
+            ><strong>Experiências investigativas</strong>
+          </div>
+          <div class="attention-controls">
+            <label class="window-label"
+              >Recorte<select id="window" aria-label="Janela de conhecimento">
+                <option value="0">J0 · Concepção</option>
+                <option value="1">J1 · Contraste</option>
+                <option value="2" selected>J2 · Acervo disponível</option>
+              </select></label
+            >
+          </div>
+        </header>
+        <main id="main" tabindex="-1">
+          <div class="experience-heading">
+            <div>
+              <span class="eyebrow">MEMÓRIA INVESTIGATIVA</span>
+              <h1>Experiências investigativas</h1>
+              <p>
+                Consulte as escolhas, as evidências e os limites de cada
+                percurso. Preservar uma experiência não significa aprovar suas
+                conclusões.
+              </p>
+            </div>
+            <button id="open-import" type="button" class="primary">
+              Preservar experiência
+            </button>
+          </div>
+          <p id="experience-status" role="status" aria-live="polite"></p>
+          <section id="import-panel" class="experience-panel" hidden>
+            <h2>Preservar uma experiência</h2>
+            <p>
+              Uma captura instrumental preserva eventos e respostas registrados.
+              Um relato secundário conserva o texto disponível, sem reconstruir
+              respostas ou escolhas ausentes.
+            </p>
+            <form id="import-form">
+              <label
+                >Título<input id="capture-title" required maxlength="240"
+              /></label>
+              <label
+                >Tipo de registro<select id="capture-kind">
+                  <option value="secondary_report">Relato secundário</option>
+                  <option value="trace">
+                    Captura instrumental (JSON Lines)
+                  </option>
+                </select></label
+              >
+              <label
+                >Produção declarada<select id="capture-producer">
+                  <option value="conversation">Conversa com assistente</option>
+                  <option value="local_harness">
+                    Harness com modelo local
+                  </option>
+                  <option value="human">Pesquisador</option>
+                </select></label
+              >
+              <label
+                >Finalidade<select id="capture-purpose">
+                  <option value="retrospective">Registro retrospectivo</option>
+                  <option value="operational_validation">
+                    Verificação de funcionamento
+                  </option>
+                  <option value="open_investigation">
+                    Investigação aberta
+                  </option>
+                  <option value="directed_investigation">
+                    Investigação com foco fornecido
+                  </option>
+                </select></label
+              >
+              <label
+                >Acesso à memória anterior<select id="capture-memory">
+                  <option value="not_recorded">Não registrado</option>
+                  <option value="none">Memória NOESE excluída</option>
+                  <option value="archive">Acervo disponível</option>
+                </select></label
+              >
+              <label
+                >Arquivo original<input
+                  id="capture-file"
+                  type="file"
+                  accept=".jsonl,.md,.txt"
+                  required
+              /></label>
+              <label class="full-width"
+                >Limites desta captura<textarea
+                  id="capture-limitations"
+                  required
+                  maxlength="10000"
+                  placeholder="O que não foi registrado ou ainda não pode ser concluído?"
+                ></textarea>
+              </label>
+              <div class="full-width form-actions">
+                <button type="button" id="cancel-import" class="quiet">
+                  Cancelar</button
+                ><button type="submit" id="save-experience" class="primary">
+                  Preservar sem homologar
+                </button>
+              </div>
+            </form>
+          </section>
+          <div class="experience-layout">
+            <section
+              class="experience-panel experience-catalog"
+              aria-label="Experiências preservadas"
+            >
+              <h2>Percursos preservados</h2>
+              <div id="experience-list"></div>
+              <button id="more-experiences" type="button" hidden>
+                Carregar mais
+              </button>
+            </section>
+            <section
+              id="experience-detail"
+              class="experience-panel"
+              aria-label="Detalhes da experiência"
+            >
+              <h2>Escolha uma experiência</h2>
+              <p>
+                O tipo de captura, as escolhas iniciais, as consultas e as
+                avaliações aparecem aqui.
+              </p>
+            </section>
+          </div>
+        </main>
+      </div>
+    </div>
+  </body>
+</html>

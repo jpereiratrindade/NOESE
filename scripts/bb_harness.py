@@ -25,7 +25,8 @@ PROTOCOL = "2025-11-25"
 TRIGGER = "Examine o MÉTIS e identifique uma questão que mereça investigação."
 READ_TOOLS = {
     "noese": {"capabilities", "search", "artifact", "artifacts", "inquiries",
-              "inquiry", "reference", "statements", "assessments", "history", "record"},
+              "inquiry", "reference", "statements", "assessments", "history", "record",
+              "experiences", "experience"},
     "metis": {"capabilities", "scientific_catalog", "search_municipalities",
               "municipality_dossier", "confront_models", "simulate_scenario",
               "inmet_alerts", "investigation_episodes"},
@@ -233,11 +234,11 @@ def provider_schema(value):
     """Avoid large bounded string repetitions in Ollama's grammar compiler.
 
     Keep the complete contract in the prompt and in local validation. Only the
-    provider's grammar omits string length constraints; this grants no authority.
+    provider's grammar omits maximum string lengths, preserving nonempty fields.
     """
     if isinstance(value, dict):
         return {k: provider_schema(v) for k, v in value.items()
-                if k not in {"minLength", "maxLength"}}
+                if k != "maxLength"}
     if isinstance(value, list):
         return [provider_schema(v) for v in value]
     return value
@@ -259,6 +260,8 @@ class Harness:
 
     def consult(self, server, tool, arguments, why, purpose):
         limits = self.config["limits"]
+        if server == "noese" and self.config.get("memory_policy") == "none" and tool != "capabilities":
+            raise Rejected("Memória anterior excluída desta execução")
         if self.calls >= limits["max_calls"]:
             raise BudgetExceeded("Número máximo de consultas atingido")
         if tool not in self.catalog.get(server, {}):
@@ -337,8 +340,9 @@ class Harness:
     def verify_final(self, final):
         if not self.focus:
             raise Rejected("Nenhum foco inicial preservado")
-        if not {"support", "alternative"}.issubset(self.purposes):
-            raise Rejected("Consultas de apoio e alternativa não foram realizadas")
+        missing = {"support", "alternative"} - self.purposes
+        if missing:
+            raise Rejected("Finalidades não registradas nas consultas: " + ", ".join(sorted(missing)))
         if final["outcome"] == "candidate" and not final["claims"]:
             raise Rejected("Candidata sem afirmações sustentadas")
         verified = []
@@ -419,6 +423,8 @@ class Harness:
             for client in self.clients.values():
                 client.close()
         result.update(initial_focus=self.focus, calls=self.calls,
+                      memory_policy=self.config.get("memory_policy", "not_recorded"),
+                      experiment_purpose=self.config.get("experiment_purpose", "not_recorded"),
                       response_bytes=self.response_bytes, generated_tokens=self.generated)
         self.journal.add("outcome", result)
         (self.journal.path/"result.json").write_bytes(encode(result)+b"\n")
@@ -488,8 +494,23 @@ def persist(path, command, window=2):
         for ident, sha in expected.items():
             if ident not in originals or digest(bytes.fromhex(originals[ident]["bytes"])) != sha:
                 raise OperationalFailure("Percurso exportado não corresponde aos eventos")
+        if "preserve_experience" in catalog:
+            config = events[0]["payload"].get("config", {})
+            capture = write("preserve_experience", {
+                "run_id": run_id, "inquiry_id": inquiry["id"],
+                "title": f"BB-Harness v0.1 · {run_id[:12]}", "capture": "trace",
+                "producer": "local_harness",
+                "purpose": config.get("experiment_purpose", "retrospective"),
+                "memory_policy": config.get("memory_policy", "not_recorded"),
+                "journal": raw.decode(),
+                "limitations": "Execução experimental. Integridade e ordem registradas não certificam sustentação científica, novidade ou relevância. Catálogo MÉTIS permanece uma fonte interpretada; memória NOESE segue a política declarada."
+            }, "experience-capture")
+            recovered, _ = client.call("experience", {"id": inquiry["id"], "window": window})
+            if unpack(recovered)["experience"]["sha256"] != digest(raw):
+                raise OperationalFailure("Captura recuperada diverge do journal")
         receipt = {"status": "RECOVERED", "run_id": run_id, "inquiry_id": inquiry["id"],
                    "journal_sha256": digest(raw), "sources_checked": len(expected),
+                   "experience_view": "/experiencias?inquiry="+inquiry["id"] if "preserve_experience" in catalog else None,
                    "human_evaluation": "PENDING", "window": window}
         (path/"persistence.json").write_bytes(encode(receipt)+b"\n")
         return receipt
@@ -498,8 +519,11 @@ def persist(path, command, window=2):
 
 
 def configuration(args):
+    memory_policy = getattr(args, "memory_policy", "archive")
     return {
         "protocol": "BB-HARNESS-0.1", "trigger": TRIGGER, "model": args.model,
+        "memory_policy": memory_policy,
+        "experiment_purpose": getattr(args, "purpose", "operational_validation"),
         "ollama": "http://127.0.0.1:11434", "window": args.window,
         "options": {"temperature": 0, "seed": 7, "num_ctx": 32768},
         "limits": {"rounds": 4, "max_calls": 10, "max_response_bytes": 60000,
@@ -509,7 +533,7 @@ def configuration(args):
                    "max_model_bytes": 40000},
         "servers": {
             "noese": {"command": [str(ROOT/"build/noese"), "mcp", "--data", str(args.data)],
-                      "allow": sorted(READ_TOOLS["noese"])},
+                      "allow": ["capabilities"] if memory_policy == "none" else sorted(READ_TOOLS["noese"])},
             "metis": {"command": [str(args.metis/"scripts/mcp.sh")],
                       "allow": sorted(READ_TOOLS["metis"])},
         },
@@ -525,6 +549,8 @@ def main():
     parser.add_argument("--metis", type=Path, default=ROOT.parent/"METIS")
     parser.add_argument("--window", type=int, choices=(0, 1, 2), default=2)
     parser.add_argument("--output", type=Path)
+    parser.add_argument("--memory-policy", choices=("none", "archive"), default="archive")
+    parser.add_argument("--purpose", choices=("operational_validation", "open_investigation", "directed_investigation"), default="operational_validation")
     args = parser.parse_args()
     args.data, args.metis = args.data.resolve(), args.metis.resolve()
     config = configuration(args)
@@ -536,6 +562,7 @@ def main():
         return 0
     path = args.output or ROOT/"var/experiments"/("bb-"+uuid.uuid4().hex[:12])
     journal = Journal(path)
+    (path/"executor-at-run.py").write_bytes(Path(__file__).read_bytes())
     run_id = str(uuid.uuid4())
     journal.add("mission", {"run_id": run_id, "config": config, "system": SYSTEM,
                 "executor_sha256": digest(Path(__file__).read_bytes()),

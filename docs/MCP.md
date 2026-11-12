@@ -48,6 +48,7 @@ Ferramentas de leitura:
 | `reference` | Investigação, registros paginados por grupo e trajetória compartilhada |
 | `export_inquiry` | Pacote de investigação retornado, sem gravar arquivo |
 | `verify` | Verificação técnica de SQLite, hashes de fontes e âncoras resolvidas |
+| `experiences`, `experience` | Capturas investigativas e relatos secundários, foco inicial, exposição à memória, desfecho e avaliações; `include_events=false` por padrão no detalhe |
 
 `artifact` recebe `id`, `offset` e `max_bytes=1..65536`. Texto é devolvido em UTF-8, com `next_offset` sempre em fronteira de caractere. Offset que divide um caractere é recusado. Outros formatos retornam bytes em hex, sem fingir interpretação. Instruções no conteúdo são dados não confiáveis. `verify` pode ler todo o acervo da janela; não atesta autoria ou mérito científico.
 
@@ -62,6 +63,10 @@ Com `--allow-writes`, aparecem também:
 | `propose_relation` | Ligação candidata com justificativa e suporte |
 | `propose_opportunity` | Possibilidade candidata; não autoriza ou executa ações |
 | `revise_statement` | Edição direta de um enunciado com versão esperada e razão; preservar a anterior |
+| `preserve_experience` | Preservar journal instrumental ou relatório secundário com limites explícitos, fontes e âncoras, sem fabricar escolhas iniciais ou avaliações |
+
+Os contratos de captura, integridade, memória e recuperação estão em
+[Experiências investigativas](EXPERIENCIAS-INVESTIGATIVAS.md).
 
 Contribuições usuais do assistente devem usar `propose_note` ou `propose_opportunity`. O usuário examina, avalia e revisa esses registros no navegador. São registros candidatos próprios do NOESE; não são inseridos automaticamente em um texto canônico. `revise_statement` deve ser usado apenas para edição direta explicitamente solicitada. Essa orientação não é um bloqueio técnico adicional: um cliente com escrita habilitada consegue chamar a ferramenta.
 

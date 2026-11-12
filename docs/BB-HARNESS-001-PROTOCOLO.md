@@ -150,6 +150,11 @@ anterior à escolha do foco. Após esse ensaio, o adaptador passou a omitir
 pelo compilador. O contrato integral continua no prompt e na validação local.
 Essa correção não foi usada para substituir a primeira execução.
 
+A [revisão posterior](EXPERIENCIAS-INVESTIGATIVAS.md) verificou a integração real,
+conservou `minLength` na gramática e acrescentou captura recuperável e política
+explícita de memória. Os resultados originais continuam preservados; as novas
+execuções não os substituem.
+
 ## Correção observada durante construção
 
 Expectativa: fontes importadas poderiam fundamentar diretamente as notas do

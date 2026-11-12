@@ -11,6 +11,9 @@ struct Service {
   json explore(const std::string &inquiry, int window, const std::string &artifact = "");
   json run(json input, int window);
   json export_inquiry(const std::string &id, int window);
+  json preserve_experience(const json &input, int window, const std::string &actor);
+  json experiences(int window, int limit = 100, int offset = 0);
+  json experience(const std::string &id, int window, bool include_events = true);
   json import_lab(int window);
   json purge(const std::string &id, const std::string &confirm);
 };

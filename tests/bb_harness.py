@@ -183,11 +183,19 @@ class Contracts(unittest.TestCase):
         with self.assertRaises(bb.Rejected):
             bb.persist(self.journal.path, self.config["servers"]["noese"]["command"])
 
+    def test_disabled_memory_is_enforced_before_dispatch(self):
+        self.harness.config["memory_policy"] = "none"
+        self.harness.catalog["noese"] = {"search": {"inputSchema": bb.obj({"query": bb.TEXT})}}
+        with self.assertRaises(bb.Rejected):
+            self.harness.consult("noese", "search", {"query": "BB-001"}, "Tentativa indevida", "orientation")
+        self.assertEqual(self.harness.calls, 0)
+
     def test_provider_grammar_compatibility_does_not_relax_local_contract(self):
         schema = bb.action_schema(True)
         grammar = bb.provider_schema(schema)
         self.assertNotIn('"maxLength"', json.dumps(grammar))
-        self.assertNotIn('"minLength"', json.dumps(grammar))
+        self.assertIn('"minLength"', json.dumps(grammar))
+        self.assertEqual(grammar["properties"]["decision"]["minLength"], 1)
         self.assertIn('"maxLength"', json.dumps(schema))
         self.assertEqual(grammar["additionalProperties"], False)
         with self.assertRaises(bb.Rejected):

@@ -146,14 +146,18 @@ void serve(Service &svc, const ServerOptions &options) {
            res.status);
   });
   for (auto file :
-       {"index.html", "workspace.html", "app.js", "style.css", "attention.js", "attention.css"}) {
+       {"index.html", "workspace.html", "app.js", "style.css", "attention.js", "attention.css",
+        "identity.css", "identity.js", "noese-symbol.svg", "favicon.svg",
+        "experiences.html", "experiences.js", "experiences.css"}) {
     std::string route = std::string(file) == "index.html"       ? "/"
                         : std::string(file) == "workspace.html" ? "/mesa"
+                        : std::string(file) == "experiences.html" ? "/experiencias"
                                                                 : "/" + std::string(file);
     server.Get(route, [file](const auto &, auto &res) {
       res.set_content(read_file(fs::path(NOESE_ROOT) / "web" / file),
                       std::string(file).ends_with(".js")    ? "application/javascript"
                       : std::string(file).ends_with(".css") ? "text/css"
+                      : std::string(file).ends_with(".svg") ? "image/svg+xml"
                                                             : "text/html; charset=utf-8");
     });
   }
@@ -217,6 +221,20 @@ void serve(Service &svc, const ServerOptions &options) {
   });
   server.Get("/api/v1/session", [&](const auto &, auto &res) {
     send(res, {{"token", token}, {"authority", "local single user"}});
+  });
+  server.Get("/api/v1/experiences", [&](const auto &req, auto &res) {
+    std::lock_guard lock(svc.store.mutex);
+    send(res, svc.experiences(integer(req, "window", 2, 2), integer(req, "limit", 100, 500),
+                              integer(req, "offset", 0, 100000)));
+  });
+  server.Get(R"(/api/v1/experiences/([a-f0-9]{32}))", [&](const auto &req, auto &res) {
+    std::lock_guard lock(svc.store.mutex);
+    send(res, svc.experience(req.matches[1], integer(req, "window", 2, 2)));
+  });
+  server.Post("/api/v1/experiences", [&](const auto &req, auto &res) {
+    auto input = body(req);
+    input["window"] = integer(req, "window", 2, 2);
+    send(res, execute_operation(svc, "preserve_experience", input, {true, "web-experiences"}), 201);
   });
   server.Get("/health", [&](const auto &, auto &res) {
     std::lock_guard lock(svc.store.mutex);

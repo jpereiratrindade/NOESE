@@ -5,67 +5,203 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>NOESE — O que merece atenção?</title>
     <link rel="stylesheet" href="/attention.css" />
+    <link rel="stylesheet" href="/identity.css" />
+    <meta name="theme-color" content="#071e38" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <script src="/identity.js" defer></script>
     <script src="/attention.js" defer></script>
   </head>
-  <body>
-    <header>
-      <a href="/" class="brand">noese<span>.</span></a
-      ><span class="identity">UM ACERVO EM INVESTIGAÇÃO</span>
-      <nav>
-        <label class="window-label"
-          >Recorte<select id="window">
-            <option value="0">J0 · Concepção</option>
-            <option value="1">J1 · Contraste</option>
-            <option value="2" selected>J2 · Acervo disponível</option>
-          </select></label
-        ><a href="/mesa">Examinar acervo ↗</a
-        ><button id="settings-button" class="text-button">
-          Processamento local
+  <body class="attention-page">
+    <a class="sister-skip" href="#main">Ir para o conteúdo</a>
+    <div class="sister-shell">
+      <aside
+        class="sister-sidebar"
+        id="sister-sidebar"
+        aria-label="Navegação principal"
+      >
+        <button
+          type="button"
+          class="sister-nav-close"
+          id="sister-nav-close"
+          aria-label="Fechar navegação"
+        >
+          ✕
         </button>
-      </nav>
-    </header>
-    <main>
-      <div class="eyebrow">
-        <span class="live-dot"></span
-        ><span id="archive-label">OBSERVANDO O ACERVO</span>
-      </div>
-      <h1>O que merece<br />nossa atenção<span>?</span></h1>
-      <p class="intro">
-        O NOESE examina as fontes disponíveis, confronta interpretações e
-        procura o que pode ampliar a investigação. Você pode aprofundar,
-        contestar ou continuar trabalhando.
-      </p>
-      <div id="message" role="status" aria-live="polite"></div>
-      <section id="activity" class="activity">
-        <div class="activity-line">
-          <span id="activity-dot" class="activity-dot"></span
-          ><strong id="activity-title">Retomando o acervo…</strong
-          ><span id="activity-model"></span>
-        </div>
-        <p id="activity-detail">
-          Consultando a última investigação preservada.
+        <a class="sister-brand" href="/" aria-label="NOESE, início">
+          <img
+            class="sister-mark"
+            src="/noese-symbol.svg"
+            width="48"
+            height="48"
+            alt=""
+          />
+          <span class="sister-brand-words"
+            ><small>ECOSSISTEMA SisTer</small><strong>NOESE</strong></span
+          >
+        </a>
+        <p class="sister-subtitle">
+          Fontes, percursos e possibilidades de investigação.
         </p>
-      </section>
-      <div id="report"></div>
-      <div id="limits"></div>
-      <section class="add-sources">
-        <div>
-          <h2>O acervo continua aberto.</h2>
-          <p>
-            Novas fontes entram no próximo exame, sem fichamento ou
-            classificação prévia.
-          </p>
+        <p class="sister-nav-label">ESPAÇO DE INVESTIGAÇÃO</p>
+        <nav class="sister-nav" aria-label="Seções do NOESE">
+          <a href="/" aria-current="page"
+            ><svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z" />
+              <circle cx="12" cy="12" r="3" /></svg
+            >O que merece atenção</a
+          >
+          <a href="/mesa"
+            ><svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M3 4h7l2 2 2-2h7v16h-7l-2 2-2-2H3V4ZM12 6v16M6 9h3m-3 4h3m6-4h3m-3 4h3"
+              /></svg
+            >Mesa de investigação</a
+          >
+          <a href="/experiencias"
+            ><svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M5 3h14v18H5zM8 7h8M8 11h8M8 15h5" /></svg
+            >Experiências investigativas</a
+          >
+        </nav>
+        <div class="sister-sidebar-bottom">
+          <section
+            class="sister-principles"
+            aria-label="Princípios de desenvolvimento"
+          >
+            <span class="sister-principles-title"
+              >PRINCÍPIOS DE DESENVOLVIMENTO</span
+            >
+            <ul class="sister-principles-list">
+              <li>
+                <svg
+                  viewBox="0 0 24 24"
+                  width="20"
+                  height="20"
+                  aria-hidden="true"
+                >
+                  <path d="M20 4C12 2 4 8 5 15l4 4c7 1 13-7 11-15Z" />
+                  <path d="M3 21 16 8M8 16v-5m0 5h5" /></svg
+                ><span>Simples, leve.</span>
+              </li>
+              <li>
+                <svg
+                  viewBox="0 0 24 24"
+                  width="20"
+                  height="20"
+                  aria-hidden="true"
+                >
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="m8 12 3 3 5-6" /></svg
+                ><span>Sempre pronto.</span>
+              </li>
+              <li>
+                <svg
+                  viewBox="0 0 24 24"
+                  width="20"
+                  height="20"
+                  aria-hidden="true"
+                >
+                  <path d="M20 8a9 9 0 1 0 0 8" />
+                  <path d="M20 3v6h-6" /></svg
+                ><span>Sempre incompleto!</span>
+              </li>
+            </ul>
+          </section>
+          <div class="sister-local">Ambiente local<span>v0.1.0</span></div>
         </div>
-        <label class="button upload-label"
-          >Incorporar arquivos<input id="upload" type="file" multiple
-        /></label>
-      </section>
-      <footer>
-        <span>NOESE · processamento local</span
-        ><span>Interpretações candidatas, sempre abertas à crítica.</span
-        ><span>M1: avaliação pendente</span>
-      </footer>
-    <section class="sister-principles" aria-label="Princípios de desenvolvimento"><span class="sister-principles-title">PRINCÍPIOS DE DESENVOLVIMENTO</span><ul class="sister-principles-list"><li><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M20 4C12 2 4 8 5 15l4 4c7 1 13-7 11-15Z"/><path d="M3 21 16 8M8 16v-5m0 5h5"/></svg><span>Simples, leve.</span></li><li><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg><span>Sempre pronto.</span></li><li><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M20 8a9 9 0 1 0 0 8"/><path d="M20 3v6h-6"/></svg><span>Sempre incompleto!</span></li></ul></section></main>
+      </aside>
+      <button
+        type="button"
+        id="sister-scrim"
+        class="sister-scrim"
+        aria-label="Fechar navegação"
+        hidden
+      ></button>
+      <div class="sister-workspace">
+        <header class="sister-topbar">
+          <button
+            type="button"
+            class="sister-menu"
+            id="sister-menu"
+            aria-label="Abrir navegação"
+            aria-controls="sister-sidebar"
+            aria-expanded="false"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+          <div class="sister-crumb">
+            <span>NOESE</span><b aria-hidden="true">/</b
+            ><strong>O que merece atenção</strong>
+          </div>
+          <div class="attention-controls">
+            <label class="window-label"
+              >Recorte<select id="window" aria-label="Janela de conhecimento">
+                <option value="0">J0 · Concepção</option>
+                <option value="1">J1 · Contraste</option>
+                <option value="2" selected>J2 · Acervo disponível</option>
+              </select></label
+            ><button id="settings-button" class="text-button">
+              Processamento local
+            </button>
+          </div>
+        </header>
+        <main id="main" tabindex="-1">
+          <section class="attention-hero" aria-label="Investigação do acervo">
+            <div class="attention-hero-copy">
+              <div class="eyebrow">
+                <span class="live-dot"></span
+                ><span id="archive-label">OBSERVANDO O ACERVO</span>
+              </div>
+              <h1>O que merece<br />nossa atenção<span>?</span></h1>
+              <p class="intro">
+                O NOESE examina as fontes disponíveis, confronta interpretações
+                e procura o que pode ampliar a investigação. Você pode
+                aprofundar, contestar ou continuar trabalhando.
+              </p>
+            </div>
+            <img
+              class="attention-hero-mark"
+              src="/noese-symbol.svg"
+              width="180"
+              height="180"
+              alt=""
+            />
+          </section>
+          <div id="message" role="status" aria-live="polite"></div>
+          <section id="activity" class="activity">
+            <div class="activity-line">
+              <span id="activity-dot" class="activity-dot"></span
+              ><strong id="activity-title">Retomando o acervo…</strong
+              ><span id="activity-model"></span>
+            </div>
+            <p id="activity-detail">
+              Consultando a última investigação preservada.
+            </p>
+          </section>
+          <div id="report"></div>
+          <div id="limits"></div>
+          <section class="add-sources">
+            <div>
+              <h2>O acervo continua aberto.</h2>
+              <p>
+                Novas fontes entram no próximo exame, sem fichamento ou
+                classificação prévia.
+              </p>
+            </div>
+            <label class="button upload-label"
+              >Incorporar arquivos<input id="upload" type="file" multiple
+            /></label>
+          </section>
+          <footer>
+            <span>NOESE · processamento local</span
+            ><span>Interpretações candidatas, sempre abertas à crítica.</span
+            ><span>M1: avaliação pendente</span>
+          </footer>
+        </main>
+      </div>
+    </div>
     <dialog id="dialog">
       <div class="dialog-heading">
         <h2 id="dialog-title"></h2>

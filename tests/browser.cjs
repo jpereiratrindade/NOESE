@@ -284,6 +284,7 @@ async function stop() {
     fullPage: true,
   });
   await page.setViewportSize({ width: 390, height: 844 });
+  await require("./identity.cjs")(page);
   assert.ok(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth,
@@ -295,6 +296,7 @@ async function stop() {
     fullPage: true,
   });
   results.push("Interface responsiva em 1440 px e 390 px");
+  results.push("Identidade SisTer, sete larguras e navegação móvel por teclado");
   assert.deepEqual(errors, []);
   fs.writeFileSync(
     path.join(evidence, "results.json"),

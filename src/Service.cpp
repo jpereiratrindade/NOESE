@@ -159,6 +159,8 @@ json Service::anchor(json in, int window) {
   return out;
 }
 json Service::record(const std::string &type, json in, int window) {
+  if (in.contains("experience"))
+    throw Error(400, "INVALID_INPUT", "Capturas exigem preserve_experience; metadados não são editáveis diretamente");
   const std::set<std::string> allowed = {"inquiries",      "statements",  "relations",
                                          "opportunities",  "assessments", "contributions",
                                          "inquiry_members"};
