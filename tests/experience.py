@@ -3,6 +3,7 @@
 import copy
 import hashlib
 import json
+import sqlite3
 from pathlib import Path
 import sys
 import tempfile
@@ -80,6 +81,30 @@ class Experiences(unittest.TestCase):
         summary = self.client.value("experience", {"id": result["inquiry_id"]})
         self.assertFalse(summary["trace"]["events_included"])
         self.assertNotIn("events", summary["trace"])
+
+    def test_legacy_roles_recover_only_exact_events_linked_to_capture(self):
+        args = self.args()
+        result = self.client.value('preserve_experience', args)
+        line = args['journal'].splitlines()[0]
+        event = self.client.value('import_text', {'filename':'unrelated-name.txt','text':line,'request_id':str(uuid.uuid4())})
+        decoy = self.client.value('import_text', {'filename':'bb-e0001.json.txt','text':'Fonte Pelotas distinta','request_id':str(uuid.uuid4())})
+        anchor = self.client.value('create_anchor', {'artifact_id':event['id'],'start':0,'end':len(line.encode()),'request_id':str(uuid.uuid4())})
+        self.client.value('propose_note', {'inquiry_id':result['inquiry_id'],'text':'Evento preservado','basis':[{'type':'anchors','id':anchor['id']}],'request_id':str(uuid.uuid4())})
+        self.client.close()
+        # Simulates the old schema payload; production recovery only appends versions.
+        with sqlite3.connect(self.data/'noese.sqlite') as db:
+            triggers = db.execute("SELECT name,sql FROM sqlite_master WHERE type='trigger' AND tbl_name='artifacts'").fetchall()
+            for name, sql in triggers:
+                db.execute('DROP TRIGGER "' + name + '"')
+            db.execute("UPDATE artifacts SET payload=json_remove(payload,'$.investigative_role','$.role_basis')")
+            for name, sql in triggers:
+                db.execute(sql)
+        self.client = Client(self.data, True)
+        technical = self.client.value('artifacts', {'scope':'technical'})['items']
+        self.assertEqual({a['id'] for a in technical}, {event['id'],result['artifact_id']})
+        self.assertEqual(technical[0]['version'], 2)
+        self.assertEqual([a['id'] for a in self.client.value('artifacts')['items']], [decoy['id']])
+        self.assertEqual(self.client.value('artifact', {'id':event['id']})['content']['text'], line)
 
     def test_secondary_report_never_fabricates_initial_focus_or_raw_events(self):
         args = self.args("secondary_report")

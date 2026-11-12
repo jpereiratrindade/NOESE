@@ -456,7 +456,7 @@ def persist(path, command, window=2):
         return unpack(value)
     try:
         catalog = client.initialize()
-        for name in ("create_inquiry", "import_text", "create_anchor", "propose_note"):
+        for name in ("create_inquiry", "import_text", "create_anchor", "propose_note", "record", "classify_artifact"):
             if name not in catalog:
                 raise OperationalFailure("Persistência NOESE sem escrita autorizada")
         inquiry = write("create_inquiry", {"title": f"BB-Harness v0.1 · {run_id[:12]}"}, "inquiry")
@@ -476,7 +476,13 @@ def persist(path, command, window=2):
             parts.append(part)
             for number, part in enumerate(parts):
                 key = f"{event['id']}-{number}"
+                # Preserve legacy import arguments and UUIDs when replaying an old receipt.
                 source = write("import_text", {"filename": f"bb-{key}.json.txt", "text": part}, key+":source")
+                current, _ = client.call("record", {"type": "artifacts", "id": source["id"], "window": window})
+                current = unpack(current)
+                if current.get("investigative_role", "source") == "source":
+                    write("classify_artifact", {"id": source["id"], "version": current["version"],
+                          "role": "instrumental_event", "reason": "Evento instrumental do BB-Harness; bytes conferidos contra o journal preservado."}, key+":role")
                 expected[source["id"]] = digest(part.encode())
                 if source["sha256"] != expected[source["id"]]:
                     raise OperationalFailure("Hash importado divergente")

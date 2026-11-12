@@ -127,9 +127,10 @@ async function refreshInquiries() {
 }
 async function refreshSources() {
   const term = $("search").value.trim();
+  const scope = "&scope=" + $("retrieval-scope").value;
   const data = term
-    ? await api("search?q=" + encodeURIComponent(term) + "&limit=100")
-    : await api("artifacts?limit=" + state.sourceLimit);
+    ? await api("search?q=" + encodeURIComponent(term) + "&limit=100" + scope)
+    : await api("artifacts?limit=" + state.sourceLimit + scope);
   state.artifacts = term ? data.items.map((i) => i.artifact) : data.items;
   $("source-count").textContent =
     String(state.artifacts.length) +
@@ -152,6 +153,15 @@ async function refreshSources() {
       node(
         "small",
         (a.attributed_author || "Autoria desconhecida") +
+          " · " +
+          {
+            source: "Fonte não classificada",
+            primary_source: "Fonte primária declarada",
+            secondary_report: "Relato secundário",
+            instrumental_event: "Evento instrumental",
+            interpretation: "Interpretação",
+            critique: "Crítica",
+          }[a.investigative_role || "source"] +
           " · " +
           a.processing +
           " · J" +
@@ -970,6 +980,7 @@ $("drop").addEventListener("drop", (e) => {
   $("drop").classList.remove("drag");
   upload(e.dataTransfer.files).catch(failure);
 });
+$("retrieval-scope").onchange = () => refreshSources().catch(failure);
 $("search-form").onsubmit = (e) => {
   e.preventDefault();
   refreshSources().catch(failure);

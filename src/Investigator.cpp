@@ -181,6 +181,9 @@ json Investigator::snapshot(int window, const json &config) {
     if (page.size() < 500)
       break;
   }
+  all.erase(std::remove_if(all.begin(), all.end(), [](const json &a) {
+    return a.value("investigative_role", "source") == "instrumental_event";
+  }), all.end());
   std::reverse(all.begin(), all.end());
   json sources = json::array(), excluded = json::array(), feedback = json::array(),
        identity = json::array();
@@ -609,14 +612,10 @@ json Investigator::view(int window) {
     current = {{"phase", "disabled"}};
   if (run.is_null() && current.value("phase", "") == "idle")
     current = {{"phase", "waiting"}};
-  json counts;
-  {
-    std::lock_guard lock(service.store.mutex);
-    counts = service.store.query("SELECT count(*) AS n FROM artifacts WHERE "
-                                 "CAST(json_extract(payload,'$.window') AS INTEGER)<=?",
-                                 {std::to_string(window)});
-  }
-  return {{"source_count", std::stoi(counts[0]["n"].get<std::string>())},
+  auto counts = service.artifacts(window, 1, 0, "investigative");
+  return {{"source_count", counts["total"]},
+          {"archive_source_count", service.artifacts(window, 1, 0, "all")["total"]},
+          {"technical_source_count", service.artifacts(window, 1, 0, "technical")["total"]},
           {"state", current},
           {"run", run},
           {"enabled", c["enabled"]},

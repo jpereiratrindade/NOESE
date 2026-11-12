@@ -64,9 +64,9 @@ class InvestigatorTests(unittest.TestCase):
         self.provider.shutdown();self.provider.server_close();self.provider_thread.join(timeout=3)
         self.tmp.cleanup()
 
-    def seed(self,texts,window=2):
+    def seed(self,texts,window=2,role="source"):
         messages=[{'jsonrpc':'2.0','id':1,'method':'initialize','params':{'protocolVersion':'2025-11-25','capabilities':{},'clientInfo':{'name':'contract-setup','version':'1'}}},{'jsonrpc':'2.0','method':'notifications/initialized'}]
-        for index,text in enumerate(texts):messages.append({'jsonrpc':'2.0','id':index+2,'method':'tools/call','params':{'name':'import_text','arguments':{'filename':uuid.uuid4().hex+'.txt','text':text,'window':window,'request_id':str(uuid.uuid4())}}})
+        for index,text in enumerate(texts):messages.append({'jsonrpc':'2.0','id':index+2,'method':'tools/call','params':{'name':'import_text','arguments':{'filename':uuid.uuid4().hex+'.txt','text':text,'investigative_role':role,'window':window,'request_id':str(uuid.uuid4())}}})
         result=subprocess.run([BINARY,'mcp','--data',str(self.data),'--allow-writes'],input=''.join(json.dumps(m)+'\n' for m in messages),text=True,capture_output=True,check=True,timeout=10)
         responses=[json.loads(line) for line in result.stdout.splitlines()]
         return [json.loads(r['result']['content'][0]['text']) for r in responses[1:]]
@@ -128,6 +128,15 @@ class InvestigatorTests(unittest.TestCase):
         prompt=json.loads(self.calls[0]['messages'][1]['content'])
         self.assertNotIn('question',prompt)
         self.assertNotIn('tools',self.calls[0])
+
+    def test_technical_diary_never_consumes_context_or_restarts_inference(self):
+        self.config(); first = self.once()
+        self.seed(['Diário Pelotas evento instrumental'] * 35, role='instrumental_event')
+        second = self.once()
+        self.assertEqual(first['id'], second['id'])
+        self.assertEqual(len(self.calls), 2)
+        prompt = json.loads(self.calls[0]['messages'][1]['content'])
+        self.assertEqual(len(prompt['sources']), 2)
 
     def test_missing_literal_citation_discards_finding(self):
         self.mode='fabrication';self.config();run=self.once()

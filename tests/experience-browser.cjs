@@ -39,7 +39,22 @@ const errors = [];
     viewport: { width: 1440, height: 1000 },
   });
   page.on("pageerror", (e) => errors.push(e.message));
-  await page.goto(url + "/experiencias");
+  await page.route("https://review.example/**", (route) =>
+    route.fulfill({
+      contentType: "text/html",
+      body: `<a href="${url}/experiencias?utm_source=chatgpt.com">Abrir</a>`,
+    }),
+  );
+  await page.goto("https://review.example/");
+  const documentResponse = page.waitForResponse(
+    (r) =>
+      r.url().startsWith(url + "/experiencias?") &&
+      r.request().isNavigationRequest(),
+  );
+  await page.getByRole("link", { name: "Abrir" }).click();
+  const linked = await documentResponse;
+  assert.equal(linked.status(), 200);
+  await page.waitForFunction(() => document.styleSheets.length >= 3);
   await page
     .getByText("Nenhuma experiência preservada neste recorte.")
     .waitFor();

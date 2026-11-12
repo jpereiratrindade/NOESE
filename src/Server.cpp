@@ -110,8 +110,13 @@ void serve(Service &svc, const ServerOptions &options) {
       return httplib::Server::HandlerResponse::Handled;
     }
     auto request_origin = req.get_header_value("Origin");
+    const bool page_navigation =
+        (req.method == "GET" || req.method == "HEAD") &&
+        (req.path == "/" || req.path == "/mesa" || req.path == "/experiencias") &&
+        req.get_header_value("Sec-Fetch-Mode") == "navigate" &&
+        req.get_header_value("Sec-Fetch-Dest") == "document";
     if ((!request_origin.empty() && request_origin != origin) ||
-        req.get_header_value("Sec-Fetch-Site") == "cross-site") {
+        (req.get_header_value("Sec-Fetch-Site") == "cross-site" && !page_navigation)) {
       send(res, {{"code", "AUTHORITY_REQUIRED"}, {"message", "Origem externa recusada"}}, 403);
       return httplib::Server::HandlerResponse::Handled;
     }
@@ -290,7 +295,7 @@ void serve(Service &svc, const ServerOptions &options) {
     if (q.size() > 1000)
       throw Error(400, "INVALID_INPUT", "Consulta longa demais");
     send(res, svc.search(q, integer(req, "window", 2, 2), integer(req, "limit", 50, 100),
-                         integer(req, "offset", 0, 100000)));
+                         integer(req, "offset", 0, 100000), req.has_param("scope") ? req.get_param_value("scope") : "investigative"));
   });
   server.Get(R"(/api/v1/history/([a-z_]+)/([a-zA-Z0-9-]+))", [&](const auto &req, auto &res) {
     std::lock_guard lock(svc.store.mutex);
@@ -331,6 +336,11 @@ void serve(Service &svc, const ServerOptions &options) {
   server.Get("/api/v1/" + resources, [&](const auto &req, auto &res) {
     std::lock_guard lock(svc.store.mutex);
     int limit = integer(req, "limit", 100, 500), offset = integer(req, "offset", 0, 100000);
+    if (req.matches[1] == "artifacts") {
+      send(res, svc.artifacts(integer(req, "window", 2, 2), limit, offset,
+                             req.has_param("scope") ? req.get_param_value("scope") : "investigative"));
+      return;
+    }
     send(res, {{"items", svc.store.list(req.matches[1], integer(req, "window", 2, 2),
                                         req.get_param_value("inquiry_id"), limit, offset)},
                {"limit", limit},

@@ -133,6 +133,7 @@ json Service::preserve_experience(const json &input, int window, const std::stri
   auto source = import_file(trace ? "experience-trace.jsonl" : "experience-report.md", content,
       {{"origin", actor}, {"imported_by", actor},
        {"source_type", trace ? "instrumental_trace" : "secondary_report"},
+       {"investigative_role", trace ? "instrumental_event" : "secondary_report"},
        {"coverage", trace ? "RECORDED_EVENTS_NOT_AUTHENTICATED" : "SECONDARY_REPORT_NO_RAW_RESPONSES"}}, window);
   auto anchored = anchor({{"artifact_id", source["id"]}, {"start", 0}, {"end", content.size()},
                          {"created_by", actor}}, window);

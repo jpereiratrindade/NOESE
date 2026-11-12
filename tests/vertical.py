@@ -212,6 +212,14 @@ class Vertical(unittest.TestCase):
         self.request('/api/v1/session',headers={'Host':'evil.example'},expected=403)
         self.request('/api/v1/session',headers={'Origin':'https://evil.example'},expected=403)
         self.request('/api/v1/session',headers={'Sec-Fetch-Site':'cross-site'},expected=403)
+        navigation={'Sec-Fetch-Site':'cross-site','Sec-Fetch-Mode':'navigate','Sec-Fetch-Dest':'document'}
+        for page in ('/', '/mesa', '/experiencias?inquiry=missing&utm_source=chatgpt.com'):
+            document,_=self.request(page,headers=navigation,raw=True)
+            self.assertIn(b'<!doctype html>',document)
+        self.request('/api/v1/session',headers=navigation,expected=403)
+        self.request('/experiencias',headers={**navigation,'Sec-Fetch-Dest':'iframe'},expected=403)
+        self.request('/experiencias',headers={**navigation,'Origin':'https://evil.example'},expected=403)
+        self.request('/api/v1/inquiries',{'title':'CSRF navigation'},headers=navigation,expected=403)
         self.request('/api/v1/artifacts/../../etc/passwd',expected=404)
         self.request('/objects/../../etc/passwd',expected=404)
         self.request('/api/v1/artifacts?limit=99999',expected=400)

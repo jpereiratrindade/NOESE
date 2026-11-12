@@ -79,6 +79,22 @@ class Client:
         self.close()
 
 class MCP(unittest.TestCase):
+    def test_retrieval_roles_preserve_bytes_and_window_history(self):
+        with Client(self.data, writes=True) as c:
+            source = c.value('import_text', {'filename':'bb-harness-event-decoy.txt', 'text':'Pelotas fonte original', 'window':0, 'request_id':rid()})
+            technical = c.value('import_text', {'filename':'documento.txt', 'text':'Pelotas evento operacional', 'investigative_role':'instrumental_event', 'window':0, 'request_id':rid()})
+            self.assertEqual([x['artifact']['id'] for x in c.value('search', {'query':'Pelotas', 'limit':1})['items']], [source['id']])
+            self.assertEqual([x['id'] for x in c.value('artifacts', {'scope':'technical'})['items']], [technical['id']])
+            self.assertEqual(c.value('artifacts', {'scope':'all'})['total'], 2)
+            args = {'id':source['id'], 'version':source['version'], 'role':'instrumental_event', 'reason':'Teste explícito de proveniência', 'window':2, 'request_id':rid()}
+            updated = c.value('classify_artifact', args)
+            self.assertEqual(updated['sha256'], source['sha256'])
+            self.assertEqual(c.value('classify_artifact', args), updated)
+            self.assertEqual(c.value('artifacts', {'window':2})['total'], 0)
+            self.assertEqual(c.value('artifacts', {'window':0})['total'], 1)
+            self.assertEqual(len(c.value('search', {'query':'Pelotas', 'scope':'all'})['items']), 2)
+            self.assertEqual(c.value('artifact', {'id':source['id']})['artifact']['id'], source['id'])
+
     def setUp(self):
         self.tmp=tempfile.TemporaryDirectory(prefix='noese-mcp-')
         self.data=Path(self.tmp.name)/'archive'

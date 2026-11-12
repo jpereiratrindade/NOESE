@@ -6,7 +6,12 @@ struct Service {
   json import_file(const std::string &name, const std::string &bytes, json meta, int window);
   json anchor(json input, int window);
   json record(const std::string &type, json input, int window);
-  json search(const std::string &text, int window, int limit, int offset);
+  json search(const std::string &text, int window, int limit, int offset,
+              const std::string &scope = "investigative");
+  json artifacts(int window, int limit, int offset, const std::string &scope = "investigative");
+  json classify_artifact(const std::string &id, const std::string &role, const std::string &reason,
+                         int window, int version, const std::string &actor);
+  void classify_experience_sources();
   json history(const std::string &type, const std::string &id, int window);
   json explore(const std::string &inquiry, int window, const std::string &artifact = "");
   json run(json input, int window);

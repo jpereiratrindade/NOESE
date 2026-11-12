@@ -105,3 +105,58 @@ recuperável. `tests/experience-browser.cjs` usa acervo temporário e verifica
 importação dos dois tipos, texto não confiável, recuperação, avaliação separada,
 exportação literal, isolamento J0/J2 e navegação responsiva. Os registros de
 avaliação desse teste são sintéticos e não entram no acervo de uso.
+
+## Recuperação por proveniência — revisão de 12/11/2026
+
+A revisão encontrou 15 eventos instrumentais entre 16 resultados para Pelotas,
+60 entre 67 para MÉTIS e 18 entre 22 para resiliência. A expectativa anterior
+— preservar cada operação para permitir auditoria — não bastava para orientar
+uma busca destinada a uma nova investigação. O ajuste local separa os recortes
+sem apagar fontes, criar outro banco ou atribuir mérito científico.
+
+`search` e `artifacts`, no MCP e no HTTP, aceitam `scope=investigative` (padrão),
+`technical` ou `all`. O primeiro exclui apenas `instrumental_event`; o segundo
+recupera esses eventos; o terceiro conserva a visão integral. A filtragem ocorre
+antes da paginação. A mesa oferece os mesmos três recortes e apresenta o papel
+de cada fonte. O observador automático também exclui eventos instrumentais
+antes dos limites de contexto e da assinatura de continuidade: importar outro
+evento técnico não inicia, por si só, outra inferência.
+
+Papéis disponíveis: `source` (sem classificação específica), `primary_source`,
+`secondary_report`, `instrumental_event`, `interpretation` e `critique`.
+`import_text` aceita `investigative_role`; `classify_artifact` exige ID, versão,
+papel, razão e UUID de requisição com escrita autorizada. A alteração cria uma
+versão e evento de proveniência; não modifica os bytes. Classificação é uma
+declaração: não autentica fonte primária, não valida a interpretação e não
+substitui as avaliações vinculadas, consultáveis em suas próprias coleções.
+A busca continua textual sobre artefatos; não é uma busca unificada de todas as
+avaliações, relações e contribuições.
+
+Para o acervo anterior, a inicialização recupera os papéis ainda ausentes a
+partir da associação explícita à experiência. Eventos avulsos só recebem papel
+instrumental quando sua âncora está vinculada à mesma investigação e seu hash
+coincide exatamente com uma linha ou parte UTF-8 da captura original. Nomes de
+arquivo não decidem classificação. Uma classificação já declarada não é
+sobrescrita. A recuperação cria versões em J2, preservando janelas anteriores.
+Diagnósticos externos à captura precisam de classificação explícita justificada.
+
+Links externos podem abrir `/`, `/mesa` e `/experiencias` por navegação de
+documento local. Host, Origin explícita, requisições de API, enquadramento e
+escritas continuam sujeitos às proteções existentes. Isso corrige a recusa
+`AUTHORITY_REQUIRED` ao abrir uma experiência por um link do ChatGPT.
+
+Aprendizado candidato, com evidência local: memória de auditoria precisa de
+recorte explícito para não dominar a recuperação textual. A correção técnica
+não demonstra perspicácia nem aprendizagem crítica. A avaliação humana de
+Pelotas continua pendente; um próximo ensaio de retomada depende de uma crítica
+real preservada. M1 permanece `NOT_READY`. O servidor publica o catálogo MCP
+atual; clientes com descoberta antiga precisam atualizar suas ferramentas.
+
+Conferência no acervo em uso após a correção: 122 fontes e 103 âncoras com
+integridade técnica verificada; 100 artefatos instrumentais e 22 no recorte
+investigativo. Pelotas: 0 investigativos / 16 técnicos; MÉTIS: 1 / 66;
+resiliência: 1 / 21. `scope=all` conserva respectivamente 16, 67 e 22 resultados.
+Os três diagnósticos externos foram classificados explicitamente após conferir
+os IDs e hashes no recibo original. Ausência de resultado investigativo para
+Pelotas não demonstra ausência de conhecimento sobre o município: neste acervo,
+as ocorrências preservadas são instrumentais.

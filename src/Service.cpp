@@ -76,9 +76,14 @@ Service::Service(fs::path root) : store(root) {
     store.save("capabilities", semantic);
   }
   tx.commit();
+  classify_experience_sources();
 }
 json Service::import_file(const std::string &filename, const std::string &bytes, json meta,
                           int window) {
+  auto role = meta.value("investigative_role", "source");
+  const std::set<std::string> roles = {"source", "primary_source", "secondary_report", "instrumental_event", "interpretation", "critique"};
+  if (!roles.contains(role))
+    throw Error(400, "INVALID_INPUT", "Papel investigativo desconhecido");
   if (filename.empty() || filename.size() > 250 ||
       filename.find_first_of("/\\\r\n") != std::string::npos || filename == "." || filename == "..")
     throw Error(400, "INVALID_INPUT", "Nome de arquivo inválido");
@@ -109,6 +114,8 @@ json Service::import_file(const std::string &filename, const std::string &bytes,
       {"imported_at", now()},
       {"recorded_at", now()},
       {"coverage", meta.value("coverage", "UNSPECIFIED")},
+      {"investigative_role", role},
+      {"role_basis", "declared_by_importer_not_scientific_validation"},
       {"window", window},
       {"source_metadata", meta}};
   Transaction tx(store);
@@ -263,7 +270,11 @@ json Service::record(const std::string &type, json in, int window) {
   tx.commit();
   return out;
 }
-json Service::search(const std::string &term, int window, int limit, int offset) {
+json Service::search(const std::string &term, int window, int limit, int offset,
+                     const std::string &scope) {
+  std::lock_guard lock(store.mutex);
+  if (scope != "investigative" && scope != "technical" && scope != "all")
+    throw Error(400, "INVALID_INPUT", "Escopo de recuperação desconhecido");
   json out = json::array();
   if (term.empty())
     return {{"items", out},
@@ -276,10 +287,15 @@ json Service::search(const std::string &term, int window, int limit, int offset)
       quoted += '"';
   }
   quoted += '"';
+  const std::string role = "COALESCE(json_extract(a.payload,'$.investigative_role'),'source')";
+  auto filter = scope == "all" ? "1" : role + (scope == "technical" ? "=" : "<>") + "'instrumental_event'";
   auto rows = store.query(
-      "SELECT id FROM artifact_fts WHERE artifact_fts MATCH ? AND id IN(SELECT id FROM artifacts "
-      "WHERE CAST(json_extract(payload,'$.window') AS INTEGER)<=?) ORDER BY rank LIMIT ? OFFSET ?",
-      {quoted, std::to_string(window), std::to_string(limit), std::to_string(offset)});
+      "SELECT a.id AS id FROM artifact_fts JOIN artifacts a ON a.id=artifact_fts.id "
+      "WHERE artifact_fts MATCH ? AND CAST(json_extract(a.payload,'$.window') AS INTEGER)<=? "
+      "AND a.version=(SELECT MAX(v.version) FROM artifacts v WHERE v.id=a.id AND "
+      "CAST(json_extract(v.payload,'$.window') AS INTEGER)<=?) AND " + filter +
+      " ORDER BY rank LIMIT ? OFFSET ?",
+      {quoted, std::to_string(window), std::to_string(window), std::to_string(limit), std::to_string(offset)});
   for (auto &r : rows) {
     auto a = store.get("artifacts", r["id"], window);
     auto bytes = store.object(a["sha256"]);
@@ -298,10 +314,11 @@ json Service::search(const std::string &term, int window, int limit, int offset)
   }
   return {{"items", out},
           {"scope", window},
+          {"retrieval_scope", scope},
           {"limit", limit},
           {"offset", offset},
           {"limitation",
-           "Somente texto indexado disponível nesta janela; similaridade não prova influência"}};
+           "Papel declarado e proveniência delimitam a recuperação; fonte ou relato não equivalem a evidência validada. Avaliações e críticas vinculadas são recuperáveis por suas coleções."}};
 }
 json Service::history(const std::string &type, const std::string &id, int window) {
   store.get(type, id, window);
